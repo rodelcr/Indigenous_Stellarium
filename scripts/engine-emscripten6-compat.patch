@@ -1,0 +1,84 @@
+diff --git a/SConstruct b/SConstruct
+index e1e48ffb..91a1e849 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -13,6 +13,14 @@ vars.AddVariables(
+ VariantDir('build/src', 'src', duplicate=0)
+ VariantDir('build/ext_src', 'ext_src', duplicate=0)
+ env = Environment(variables=vars)
++# --- patched by indigenous-stellarium/scripts/build_engine.sh ---
++# SCons does not propagate the invoking shell's PATH by default, so
++# subprocess tools (emcc's python3 entry point in particular) can resolve
++# to macOS's ancient bundled /usr/bin/python3 (CommandLineTools, 3.9.x)
++# instead of the shell's python3 (>=3.10), which modern Emscripten
++# requires. Inherit the real PATH so the correct interpreter is found.
++env['ENV']['PATH'] = os.environ['PATH']
++# --- end patch ---
+ 
+ env.Append(CFLAGS= '-Wall -std=gnu11 -Wno-unknown-pragmas -D_GNU_SOURCE '
+                    '-Wno-missing-braces',
+@@ -108,14 +116,18 @@ env.Append(CCFLAGS='-DNO_LIBCURL')
+ 
+ # All the emscripten runtime functions we use.
+ # Needed since emscripten 1.37.
++# patched by indigenous-stellarium/scripts/build_engine.sh:
++# 'ALLOC_NORMAL' and 'allocate' were part of Emscripten's legacy runtime
++# and have been removed entirely in modern Emscripten (not just gated
++# behind a compat flag) -- grepping src/js/*.js shows the engine's own
++# JS glue never actually calls them, so they're just dropped here.
++# '_malloc'/'_free' ARE used (see src/js/{pre,obj,geojson}.js) but modern
++# Emscripten exports underscore-prefixed C symbols via EXPORTED_FUNCTIONS,
++# not EXPORTED_RUNTIME_METHODS -- moved below.
+ extra_exported = [
+-    'ALLOC_NORMAL',
+     'GL',
+     'UTF8ToString',
+-    '_free',
+-    '_malloc',
+     'addFunction',
+-    'allocate',
+     'ccall',
+     'cwrap',
+     'getValue',
+@@ -142,8 +154,14 @@ flags = [
+          '-O3',
+          '-s', 'USE_WEBGL2=1',
+          '-s', 'NO_EXIT_RUNTIME=1',
+-         '-s', '"EXPORTED_FUNCTIONS=[]"',
+-         '-s', '"EXTRA_EXPORTED_RUNTIME_METHODS=[%s]"' % extra_exported,
++         # patched by indigenous-stellarium/scripts/build_engine.sh:
++         # _malloc/_free need to be reachable as C symbols from the pre-js
++         # glue (Module._malloc / Module._free) -- see comment above.
++         '-s', '"EXPORTED_FUNCTIONS=[\'_malloc\',\'_free\']"',
++         # patched by indigenous-stellarium/scripts/build_engine.sh:
++         # EXTRA_EXPORTED_RUNTIME_METHODS was removed in modern Emscripten;
++         # EXPORTED_RUNTIME_METHODS is the direct replacement.
++         '-s', '"EXPORTED_RUNTIME_METHODS=[%s]"' % extra_exported,
+          '-s', 'FILESYSTEM=0'
+         ]
+ 
+@@ -163,7 +181,23 @@ if env['mode'] == 'debug':
+ if env['es6']:
+     flags += ['-s', 'EXPORT_ES6=1', '-s', 'USE_ES6_IMPORT_META=0']
+ 
+-env.Append(CCFLAGS=['-DNO_ARGP', '-DGLES2 1'] + flags)
++# patched by indigenous-stellarium/scripts/build_engine.sh:
++# `flags` contains linker-only `-s` settings (MODULARIZE, ALLOW_MEMORY_GROWTH,
++# etc.) that this SConstruct also feeds into CCFLAGS for per-file `-c`
++# compile steps. Modern Emscripten treats "linker setting ignored during
++# compilation" as a warning, which `werror=1` (the default here) escalates
++# to a hard error. Suppress just that warning class rather than restructure
++# which flags go where.
++# Also: the vendored ext_src/zlib/*.c uses pre-ANSI K&R-style function
++# definitions; the Clang bundled with modern Emscripten warns on these
++# (-Wdeprecated-non-prototype), which -Werror again turns fatal. zlib is
++# third-party vendored code we don't want to hand-edit, so suppress it too.
++# Also: modern Clang's stricter -Wunused-but-set-variable catches genuine
++# (harmless) dead stores in the engine's own 2021-era src/ (e.g.
++# src/modules/comets.c) that the 2021-era Clang didn't flag. Suppress
++# rather than hand-edit engine source we don't intend to maintain upstream.
++env.Append(CCFLAGS=['-DNO_ARGP', '-DGLES2 1', '-Wno-unused-command-line-argument',
++                     '-Wno-deprecated-non-prototype', '-Wno-unused-but-set-variable'] + flags)
+ env.Append(LINKFLAGS=flags)
+ env.Append(LIBS=['GL'])
+ 
