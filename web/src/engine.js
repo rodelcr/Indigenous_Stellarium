@@ -100,10 +100,21 @@ export function initEngine(canvas) {
           // rather than pulling in an external CDN dependency.
           translateFn: (domain, str) => str,
           onReady: (stel) => {
-            stelInstance = stel;
-            addDataSources(stel);
-            setInitialVisibility(stel);
-            resolve(stel);
+            // addDataSources/setInitialVisibility touch stel.core.* and
+            // can throw (e.g. a module missing/renamed after a future
+            // engine rebuild). Without this try/catch, a throw here
+            // would skip resolve() entirely and leave the promise
+            // pending forever — App.vue's `await initEngine(...)` would
+            // hang with no error banner, exactly the silent-blank-canvas
+            // failure mode this task is meant to prevent.
+            try {
+              stelInstance = stel;
+              addDataSources(stel);
+              setInitialVisibility(stel);
+              resolve(stel);
+            } catch (err) {
+              reject(err);
+            }
           },
         });
       })
