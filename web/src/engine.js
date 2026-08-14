@@ -1,0 +1,116 @@
+// engine.js — stellarium-web-engine lifecycle.
+//
+// This is the ONLY module that talks to the raw engine. Later tasks
+// (culture switching, star selection, authoring UI) must go through
+// `getStel()` rather than re-initializing or reaching into the WASM
+// module directly. Keep this file to boot + visibility defaults only —
+// no UI, no culture logic, no selection logic.
+//
+// Initialization sequence and data-source URLs are copied verbatim from
+// the engine repo's own working example,
+// vendor/stellarium-web-engine/apps/simple-html/stellarium-web-engine.html
+// (read that file before changing anything below) — it is the verified
+// ground truth for how this engine wants to be booted.
+
+const ENGINE_JS_URL = '/engine/stellarium-web-engine.js';
+const ENGINE_WASM_URL = '/engine/stellarium-web-engine.wasm';
+const SKYDATA_BASE_URL = '/skydata/';
+
+let stelInstance = null;
+let loadEnginePromise = null;
+
+// StelWebEngine() is emitted by Emscripten as a classic (non-module)
+// global, so it must be loaded via a plain <script> tag rather than
+// `import`.
+function loadEngineScript() {
+  if (loadEnginePromise) return loadEnginePromise;
+  loadEnginePromise = new Promise((resolve, reject) => {
+    if (window.StelWebEngine) {
+      resolve(window.StelWebEngine);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = ENGINE_JS_URL;
+    script.onload = () => resolve(window.StelWebEngine);
+    script.onerror = () => reject(new Error(`Failed to load ${ENGINE_JS_URL}`));
+    document.head.appendChild(script);
+  });
+  return loadEnginePromise;
+}
+
+function addDataSources(stel) {
+  // Mirrors apps/simple-html/stellarium-web-engine.html's onReady data
+  // source setup exactly (same keys, same relative layout under
+  // test-skydata/), just pointed at our /skydata/ static mount instead
+  // of a path relative to the demo page.
+  const core = stel.core;
+  const base = SKYDATA_BASE_URL;
+
+  core.stars.addDataSource({ url: base + 'stars' });
+  core.skycultures.addDataSource({ url: base + 'skycultures/western', key: 'western' });
+  core.dsos.addDataSource({ url: base + 'dso' });
+  core.landscapes.addDataSource({ url: base + 'landscapes/guereins', key: 'guereins' });
+  core.milkyway.addDataSource({ url: base + 'surveys/milkyway' });
+  core.minor_planets.addDataSource({ url: base + 'mpcorb.dat', key: 'mpc_asteroids' });
+  core.planets.addDataSource({ url: base + 'surveys/sso/moon', key: 'moon' });
+  core.planets.addDataSource({ url: base + 'surveys/sso/sun', key: 'sun' });
+  core.planets.addDataSource({ url: base + 'surveys/sso/moon', key: 'default' });
+  core.comets.addDataSource({ url: base + 'CometEls.txt', key: 'mpc_comets' });
+  core.satellites.addDataSource({ url: base + 'tle_satellite.jsonl.gz', key: 'jsonl/sat' });
+}
+
+function setInitialVisibility(stel) {
+  const core = stel.core;
+
+  // Task 1 found the engine's *default* atmosphere/landscape rendering
+  // occludes the sky (a lit "daytime" atmosphere + opaque ground horizon
+  // drawn over the stars), so a naive boot shows a blank/dark canvas.
+  // Turn both off explicitly so the star field is visible on first load.
+  core.atmosphere.visible = false;
+  core.landscapes.visible = false;
+
+  // Product requirement: Western/IAU constellations are OFF by default
+  // (indigenous constellations are first-class; Western figuring is
+  // opt-in). Explicitly clear all three renderings — lines, labels, and
+  // constellation-art images — not just lines, so nothing Western draws
+  // on first load even though the `western` sky culture data source is
+  // loaded (later tasks need it loaded, just not shown).
+  core.constellations.lines_visible = false;
+  core.constellations.labels_visible = false;
+  core.constellations.images_visible = false;
+}
+
+/**
+ * Boot the engine into `canvas` and resolve with the initialized `stel`
+ * instance once onReady fires. Safe to call once per app lifetime.
+ */
+export function initEngine(canvas) {
+  return loadEngineScript().then(
+    (StelWebEngine) =>
+      new Promise((resolve, reject) => {
+        if (!StelWebEngine) {
+          reject(new Error('StelWebEngine global not found after loading engine script'));
+          return;
+        }
+        StelWebEngine({
+          wasmFile: ENGINE_WASM_URL,
+          canvas,
+          // No i18next wired up here (this is the project's own shell,
+          // not the demo page) — pass strings through untranslated
+          // rather than pulling in an external CDN dependency.
+          translateFn: (domain, str) => str,
+          onReady: (stel) => {
+            stelInstance = stel;
+            addDataSources(stel);
+            setInitialVisibility(stel);
+            resolve(stel);
+          },
+        });
+      })
+  );
+}
+
+/** The initialized engine instance, or null/undefined before initEngine() resolves. */
+export function getStel() {
+  return stelInstance;
+}

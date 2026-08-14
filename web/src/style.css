@@ -1,0 +1,16 @@
+/* Full-viewport shell for the sky view. No themed marketing styles from
+   the Vite scaffold are needed here — App.vue is just a canvas. */
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}

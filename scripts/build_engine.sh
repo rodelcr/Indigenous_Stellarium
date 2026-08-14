@@ -3,19 +3,16 @@
 # build_engine.sh — compile stellarium-web-engine (C -> WebAssembly) and
 # stage its build artifacts for the frontend to consume.
 #
-# STAGING-DIR RATIONALE (read this before changing the output paths):
-# Task 1 (this script) runs before Task 2 scaffolds the `web/` Vite app.
-# `npm create vite@latest web` refuses to run against a pre-existing,
-# non-empty `web/` directory, so this script must NOT create
-# `web/public/engine/` or `web/public/skydata/` itself. Instead it stages
-# everything under `build-artifacts/` at the repo root:
-#   build-artifacts/engine/stellarium-web-engine.js
-#   build-artifacts/engine/stellarium-web-engine.wasm
-#   build-artifacts/skydata/            (copy of apps/test-skydata/)
-# Task 2's implementer moves/copies these into `web/public/engine/` and
-# `web/public/skydata/` once that directory exists. This script is safe to
-# re-run at any point (idempotent) — later tasks can re-run it after Task 2
-# lands and copy straight into `web/public/` themselves if preferred.
+# Outputs go directly into the Vite app's public/ dir (Vite serves
+# public/ files at the site root as-is, no build step needed for them):
+#   web/public/engine/stellarium-web-engine.js
+#   web/public/engine/stellarium-web-engine.wasm
+#   web/public/skydata/            (copy of apps/test-skydata/)
+# (Task 1 originally staged these under a repo-root `build-artifacts/`
+# directory because `npm create vite@latest web` refuses to run against
+# a pre-existing, non-empty `web/` directory, and `web/` didn't exist
+# yet. Task 2 scaffolded `web/` first, so that staging step is no longer
+# needed and has been retired.)
 #
 # Requires `emcc` (Emscripten) and `scons` on PATH. This script does NOT
 # install them — install with `brew install emscripten scons` if missing.
@@ -24,9 +21,8 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENDOR_DIR="${REPO_ROOT}/vendor/stellarium-web-engine"
-STAGING_DIR="${REPO_ROOT}/build-artifacts"
-ENGINE_OUT="${STAGING_DIR}/engine"
-SKYDATA_OUT="${STAGING_DIR}/skydata"
+ENGINE_OUT="${REPO_ROOT}/web/public/engine"
+SKYDATA_OUT="${REPO_ROOT}/web/public/skydata"
 ENGINE_REPO_URL="https://github.com/Stellarium/stellarium-web-engine"
 
 echo "==> [1/7] Checking toolchain (emcc, scons)"
@@ -104,7 +100,7 @@ echo "==> [5/7] Building engine WASM (make js)"
   make js
 )
 
-echo "==> [6/7] Staging build/stellarium-web-engine.{js,wasm} -> build-artifacts/engine/"
+echo "==> [6/7] Staging build/stellarium-web-engine.{js,wasm} -> web/public/engine/"
 mkdir -p "${ENGINE_OUT}"
 BUILT_JS="${VENDOR_DIR}/build/stellarium-web-engine.js"
 BUILT_WASM="${VENDOR_DIR}/build/stellarium-web-engine.wasm"
@@ -117,7 +113,7 @@ fi
 cp "${BUILT_JS}" "${ENGINE_OUT}/stellarium-web-engine.js"
 cp "${BUILT_WASM}" "${ENGINE_OUT}/stellarium-web-engine.wasm"
 
-echo "==> [7/7] Staging apps/test-skydata/ -> build-artifacts/skydata/"
+echo "==> [7/7] Staging apps/test-skydata/ -> web/public/skydata/"
 rm -rf "${SKYDATA_OUT}"
 cp -R "${VENDOR_DIR}/apps/test-skydata" "${SKYDATA_OUT}"
 
