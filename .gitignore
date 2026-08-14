@@ -1,0 +1,11 @@
+vendor/
+build-artifacts/
+web/public/engine/
+web/public/skydata/
+web/public/skycultures/
+web/public/taxonomy.json
+node_modules/
+backend/.venv/
+*.sqlite
+dist/
+.DS_Store
