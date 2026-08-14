@@ -9,3 +9,6 @@ backend/.venv/
 *.sqlite
 dist/
 .DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
