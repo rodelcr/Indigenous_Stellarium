@@ -79,6 +79,9 @@ function selectChild(child) {
     core.skycultures.current_id = id;
     core.constellations.lines_visible = true;
     core.constellations.labels_visible = true;
+    // Re-enable star common-name rendering (see placeholder branch below
+    // for why this can be off) now that a real culture with data is active.
+    core.stars.hints_visible = true;
   } else {
     // Placeholder node: no dataset exists yet, so there is nothing to
     // render. Turn off constellation display rather than leaving a
@@ -86,6 +89,15 @@ function selectChild(child) {
     // has no data of its own.
     core.constellations.lines_visible = false;
     core.constellations.labels_visible = false;
+    // skycultures.current_id has no "clear" call (the engine only swaps
+    // between loaded culture keys — see skycultures.c), so a previously
+    // active culture stays "current" internally. That alone would leave
+    // its star common names (e.g. Māori "Whanui") rendered right next to
+    // this placeholder's "no dataset yet" badge. stars.hints_visible is a
+    // separate, independently-registered engine property that gates
+    // star_render_name() regardless of current_id, so use it to suppress
+    // those stale common names for placeholders.
+    core.stars.hints_visible = false;
   }
 
   activeChild.value = child;
