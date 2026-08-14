@@ -1,0 +1,254 @@
+<script setup>
+// CulturePanel.vue — the culture switcher: a collapsible tree built from
+// /taxonomy.json that lets the user choose whose sky they're looking at.
+// This is the only place (besides engine.js's boot-time defaults) that
+// mutates stel.core.skycultures / stel.core.constellations — App.vue stays
+// thin and does not reach into the engine itself.
+//
+// Design note on the taxonomy id collision: "western" is used as BOTH a
+// top-level bucket id and a leaf child id in taxonomy.json. We never build
+// a flat id -> node lookup across buckets and children (that's exactly the
+// map where the collision would silently pick the wrong node). Instead:
+//   - bucket expand/collapse state is keyed by bucket.id (buckets are
+//     unique among themselves: polynesian, south_american, ...).
+//   - the active/selected node is tracked by object REFERENCE (the exact
+//     child object from the parsed taxonomy array), not by id string, so
+//     there is no string-keyed namespace where "western" (bucket) and
+//     "western" (child) could collide.
+//   - the only string key that crosses node types is the culture-selected
+//     emit payload, and that's just `child.id` handed to the caller as
+//     specified by the task interface — we don't look anything up with it.
+import { ref, onMounted } from 'vue';
+import { getStel } from '../engine.js';
+
+const emit = defineEmits(['culture-selected']);
+
+const buckets = ref([]);
+const loadError = ref(null);
+// Bucket ids are expanded by default so the full tree is visible on first
+// load ("panel open") even though no culture is active yet.
+const expanded = ref({});
+// The currently active child node (object reference — see note above), or
+// null when no culture is selected (first-load / stars-only state).
+const activeChild = ref(null);
+
+// Sky culture ids that have already been handed to
+// stel.core.skycultures.addDataSource(). engine.js loads 'western' once at
+// boot (with rendering hidden), so it starts pre-populated to avoid a
+// second, redundant addDataSource call for the same key.
+const loadedCultureIds = new Set(['western']);
+
+onMounted(async () => {
+  try {
+    const res = await fetch('/taxonomy.json');
+    if (!res.ok) throw new Error(`Failed to fetch /taxonomy.json: ${res.status}`);
+    const data = await res.json();
+    for (const bucket of data) {
+      expanded.value[bucket.id] = true;
+    }
+    buckets.value = data;
+  } catch (err) {
+    console.error('CulturePanel: failed to load taxonomy.json', err);
+    loadError.value = err;
+  }
+});
+
+function toggleBucket(bucketId) {
+  expanded.value[bucketId] = !expanded.value[bucketId];
+}
+
+function selectChild(child) {
+  const stel = getStel();
+  if (!stel) {
+    // Engine hasn't finished booting yet; ignore rather than throwing on
+    // a null stel.core. Selecting a culture before the WASM engine is
+    // ready is a real (if narrow) race, not a case worth building a
+    // loading-state UI around for this task.
+    console.warn('CulturePanel: engine not ready yet, ignoring selection of', child.id);
+    return;
+  }
+
+  const core = stel.core;
+
+  if (child.skyculture_id) {
+    const id = child.skyculture_id;
+    if (!loadedCultureIds.has(id)) {
+      core.skycultures.addDataSource({ url: '/skycultures/' + id, key: id });
+      loadedCultureIds.add(id);
+    }
+    core.skycultures.current_id = id;
+    core.constellations.lines_visible = true;
+    core.constellations.labels_visible = true;
+  } else {
+    // Placeholder node: no dataset exists yet, so there is nothing to
+    // render. Turn off constellation display rather than leaving a
+    // previously-selected culture's lines on screen for a bucket that
+    // has no data of its own.
+    core.constellations.lines_visible = false;
+    core.constellations.labels_visible = false;
+  }
+
+  activeChild.value = child;
+  emit('culture-selected', child.id);
+}
+</script>
+
+<template>
+  <div class="culture-panel">
+    <h2 class="panel-title">Sky Cultures</h2>
+    <div v-if="loadError" class="panel-error">
+      Failed to load culture list. Check the console for details.
+    </div>
+    <ul class="bucket-list">
+      <li v-for="bucket in buckets" :key="bucket.id" class="bucket">
+        <button
+          type="button"
+          class="bucket-header"
+          :aria-expanded="!!expanded[bucket.id]"
+          @click="toggleBucket(bucket.id)"
+        >
+          <span class="disclosure">{{ expanded[bucket.id] ? '▾' : '▸' }}</span>
+          {{ bucket.label }}
+        </button>
+        <ul v-show="expanded[bucket.id]" class="child-list">
+          <li v-for="child in bucket.children" :key="child.id">
+            <button
+              type="button"
+              class="child-button"
+              :class="{
+                active: activeChild === child,
+                placeholder: child.placeholder,
+              }"
+              @click="selectChild(child)"
+            >
+              <span class="child-label">{{ child.label }}</span>
+              <span v-if="child.region" class="child-region">{{ child.region }}</span>
+              <span v-if="child.placeholder" class="placeholder-badge">
+                no dataset yet — help us build it
+              </span>
+            </button>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<style scoped>
+.culture-panel {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  width: 280px;
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  background: rgba(15, 15, 25, 0.85);
+  color: #eee;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font: 13px/1.4 system-ui, sans-serif;
+  z-index: 10;
+}
+
+.panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #bbb;
+}
+
+.panel-error {
+  background: rgba(120, 0, 0, 0.6);
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
+
+.bucket-list,
+.child-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.bucket + .bucket {
+  margin-top: 0.25rem;
+}
+
+.bucket-header {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #eee;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.35rem 0.25rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.bucket-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.disclosure {
+  display: inline-block;
+  width: 1em;
+  color: #999;
+}
+
+.child-list {
+  padding-left: 1.4rem;
+}
+
+.child-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #ddd;
+  font: inherit;
+  padding: 0.3rem 0.5rem;
+  margin: 0.1rem 0;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.child-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.child-button.active {
+  background: rgba(90, 140, 255, 0.25);
+  outline: 1px solid rgba(120, 160, 255, 0.6);
+}
+
+.child-label {
+  font-weight: 500;
+}
+
+.child-region {
+  font-size: 11px;
+  color: #999;
+}
+
+.child-button.placeholder .child-label {
+  color: #ddd;
+}
+
+.placeholder-badge {
+  margin-top: 0.15rem;
+  font-size: 10.5px;
+  font-style: italic;
+  color: #c9b37a;
+}
+</style>

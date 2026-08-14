@@ -5,6 +5,7 @@
 // engine.js; do not grow that logic back into this component.
 import { onMounted, ref } from 'vue';
 import { initEngine } from './engine.js';
+import CulturePanel from './components/CulturePanel.vue';
 
 const canvas = ref(null);
 const loadError = ref(null);
@@ -27,6 +28,9 @@ onMounted(async () => {
   <div v-if="loadError" class="load-error">
     Failed to load the sky engine. Check the console for details.
   </div>
+  <!-- culture-selected is not consumed here yet; Task 6's authoring panel
+       will listen for it once it's added as a sibling of CulturePanel. -->
+  <CulturePanel />
 </template>
 
 <style scoped>
