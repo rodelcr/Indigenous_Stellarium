@@ -41,16 +41,60 @@ export function parseHip(designations) {
  * @param {(payload: {hip: number, designations: string[], culturalNames: Array<{name_native?: string, name_english?: string, name_pronounce?: string}>, obj: object}) => void} cb
  * @returns {() => void} unsubscribe function
  */
-export function onStarSelected(cb) {
+// Shared engine-subscription plumbing used by both onStarSelected() and
+// onSelectionCleared() below. Factored out because both need the exact
+// same two pieces of ceremony:
+//
+// 1. The engine has no removeValueChanged/off API (verified against
+//    source); onValueChanged registers a global sink for the whole
+//    tree, forever. `unsubscribed` guards the handler body so a caller
+//    who has unsubscribed stops receiving events even though the
+//    underlying engine callback is never actually removed.
+// 2. getStel() returns null until initEngine()'s promise resolves, and
+//    callers (e.g. StarInfo.vue's onMounted) run well before that —
+//    App.vue awaits initEngine() itself, but its children mount
+//    synchronously before that await completes. Poll until the engine
+//    is up rather than silently no-op'ing on a null stel. The interval
+//    is cleared both when the engine is found and on unsubscribe.
+//
+// `onChange(stel, path)` is called for every stel value change once the
+// engine is ready; callers filter to path === 'selection' themselves.
+function subscribeToSelectionChanges(onChange) {
   let unsubscribed = false;
+  let pollId = null;
 
-  // The engine has no removeValueChanged/off API (verified against
-  // source); onValueChanged registers a single global sink for the
-  // whole tree, forever. Guard the handler body so an unsubscribed
-  // caller stops receiving events even though the underlying engine
-  // callback is never actually removed.
-  const handler = (stel) => (path) => {
-    if (unsubscribed) return;
+  const attach = (stel) => {
+    stel.onValueChanged((path) => {
+      if (unsubscribed) return;
+      onChange(stel, path);
+    });
+  };
+
+  const stel = getStel();
+  if (stel) {
+    attach(stel);
+  } else {
+    pollId = setInterval(() => {
+      const readyStel = getStel();
+      if (!readyStel) return;
+      clearInterval(pollId);
+      pollId = null;
+      if (unsubscribed) return;
+      attach(readyStel);
+    }, 200);
+  }
+
+  return () => {
+    unsubscribed = true;
+    if (pollId !== null) {
+      clearInterval(pollId);
+      pollId = null;
+    }
+  };
+}
+
+export function onStarSelected(cb) {
+  return subscribeToSelectionChanges((stel, path) => {
     if (path !== 'selection') return;
 
     const obj = stel.core.selection;
@@ -62,33 +106,38 @@ export function onStarSelected(cb) {
 
     const culturalNames = obj.culturalDesignations();
     cb({ hip, designations, culturalNames, obj });
-  };
+  });
+}
 
-  // getStel() returns null until initEngine()'s promise resolves, and
-  // callers of onStarSelected (e.g. StarInfo.vue's onMounted) run well
-  // before that — App.vue awaits initEngine() itself, but its children
-  // mount synchronously before that await completes. Poll until the
-  // engine is up rather than silently no-op'ing on a null stel.
-  let pollId = null;
-  const stel = getStel();
-  if (stel) {
-    stel.onValueChanged(handler(stel));
-  } else {
-    pollId = setInterval(() => {
-      const readyStel = getStel();
-      if (!readyStel) return;
-      clearInterval(pollId);
-      pollId = null;
-      if (unsubscribed) return;
-      readyStel.onValueChanged(handler(readyStel));
-    }, 200);
-  }
+/**
+ * Subscribe to engine selection changes that clear or move away from a
+ * HIP-bearing star: empty sky, a planet, a DSO, or any other selection
+ * that does not resolve to a HIP number. `cb` is called with no
+ * arguments in that case. Does NOT fire on a star->star transition
+ * (that's still just an onStarSelected update) — it only fires when
+ * the new selection is NOT a HIP-bearing star.
+ *
+ * This exists because onStarSelected() intentionally never fires for
+ * non-star selections (see its contract above), which on its own would
+ * leave a UI showing star info with no signal to clear it. Kept as a
+ * separate subscription rather than folded into onStarSelected's
+ * callback so onStarSelected's "HIP-bearing stars only" contract for
+ * Task 6 stays untouched.
+ *
+ * @param {() => void} cb
+ * @returns {() => void} unsubscribe function
+ */
+export function onSelectionCleared(cb) {
+  return subscribeToSelectionChanges((stel, path) => {
+    if (path !== 'selection') return;
 
-  return () => {
-    unsubscribed = true;
-    if (pollId !== null) {
-      clearInterval(pollId);
-      pollId = null;
+    const obj = stel.core.selection;
+    if (!obj) {
+      cb();
+      return;
     }
-  };
+
+    const hip = parseHip(obj.designations());
+    if (hip === null) cb();
+  });
 }

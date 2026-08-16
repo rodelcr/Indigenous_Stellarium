@@ -1,0 +1,42 @@
+diff --git a/src/modules/stars.c b/src/modules/stars.c
+index 1f86afa2..a8230193 100644
+--- a/src/modules/stars.c
++++ b/src/modules/stars.c
+@@ -412,15 +412,37 @@ void star_get_designations(
+     const star_t *star = (const star_t*)obj;
+     const char *names = star->names;
+     char buf[128];
++    bool has_hip_name = false;
+ 
++    if (star->hip) snprintf(buf, sizeof(buf), "HIP %d", star->hip);
+     while (names && *names) {
+         f(obj, user, NULL, names);
++        // The on_file_tile_loaded() fallback below synthesizes a
++        // "HIP %d" entry into s->names for stars that arrived with no
++        // other catalog ids at all. Track whether that already
++        // happened so the unconditional HIP designation added below
++        // doesn't emit the same string a second time.
++        if (star->hip && strcmp(names, buf) == 0) has_hip_name = true;
+         names += strlen(names) + 1;
+     }
+     if (star->gaia) {
+         snprintf(buf, sizeof(buf), "%" PRId64, star->gaia);
+         f(obj, user, "GAIA", buf);
+     }
++    // patched by indigenous-stellarium/scripts/hip-designation.patch:
++    // Always expose the Hipparcos catalog number as a designation, not
++    // just as a same-string fallback for id-less stars (see above).
++    // Named/bright stars have Bayer or proper-name ids in s->names and
++    // never reached that fallback, so obj.designations() previously had
++    // no "HIP <n>" entry at all for them -- even though star->hip was
++    // parsed and stored. That made stars unreachable by HIP from JS,
++    // which sky-culture constellation-line data (and the constellation
++    // authoring tool) needs. has_hip_name guards against emitting the
++    // identical string twice when the fallback above already added it.
++    if (star->hip && !has_hip_name) {
++        snprintf(buf, sizeof(buf), "%d", star->hip);
++        f(obj, user, "HIP", buf);
++    }
+ }
+ 
+ // Used by the cache.

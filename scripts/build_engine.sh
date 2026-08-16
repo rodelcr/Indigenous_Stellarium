@@ -25,7 +25,7 @@ ENGINE_OUT="${REPO_ROOT}/web/public/engine"
 SKYDATA_OUT="${REPO_ROOT}/web/public/skydata"
 ENGINE_REPO_URL="https://github.com/Stellarium/stellarium-web-engine"
 
-echo "==> [1/7] Checking toolchain (emcc, scons)"
+echo "==> [1/8] Checking toolchain (emcc, scons)"
 if ! command -v emcc >/dev/null 2>&1; then
   echo "ERROR: emcc (Emscripten) not found on PATH. Install with: brew install emscripten" >&2
   exit 1
@@ -37,7 +37,7 @@ fi
 echo "    emcc:  $(emcc --version | head -1)"
 echo "    scons: $(scons --version | sed -n '2p')"
 
-echo "==> [2/7] Fetching stellarium-web-engine into vendor/"
+echo "==> [2/8] Fetching stellarium-web-engine into vendor/"
 if [ -d "${VENDOR_DIR}/.git" ]; then
   echo "    vendor/stellarium-web-engine already present — skipping clone"
 else
@@ -64,7 +64,7 @@ fi
 #      definitions in vendored zlib, and one unused-but-set-variable in
 #      src/modules/comets.c. All three are suppressed via -Wno- flags
 #      rather than hand-editing vendored/engine source.
-echo "==> [3/7] Patching vendor/ SConstruct for Emscripten 6.x compatibility"
+echo "==> [3/8] Patching vendor/ SConstruct for Emscripten 6.x compatibility"
 BUILD_PATCH_FILE="${REPO_ROOT}/scripts/engine-emscripten6-compat.patch"
 if grep -q "patched by indigenous-stellarium" "${VENDOR_DIR}/SConstruct" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -85,7 +85,7 @@ fi
 # calls — while the adjacent vuetify@2.x CSS `<link>` was already pinned.
 # Patching so the smoke test (and anyone else who reaches for this demo
 # page) works out of the box.
-echo "==> [4/7] Patching apps/simple-html/ demo page for the smoke test"
+echo "==> [4/8] Patching apps/simple-html/ demo page for the smoke test"
 DEMO_PATCH_FILE="${REPO_ROOT}/scripts/engine-demo-page-fixes.patch"
 if grep -q "vue@2/dist/vue.js" "${VENDOR_DIR}/apps/simple-html/stellarium-web-engine.html" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -94,13 +94,33 @@ else
   echo "    applied ${DEMO_PATCH_FILE}"
 fi
 
-echo "==> [5/7] Building engine WASM (make js)"
+# star_get_designations() in src/modules/stars.c only emits a "HIP <n>"
+# designation for stars that arrived with no other catalog ids at all
+# (a fallback baked into on_file_tile_loaded()). Named/bright stars
+# have Bayer/proper-name ids and never hit that fallback, so
+# obj.designations() had no HIP entry for them even though star->hip
+# is parsed and stored -- making stars unreachable by HIP from JS.
+# Sky-culture constellation-line data (and the Task 6 constellation
+# authoring tool) key on HIP numbers, so this is a hard blocker.
+# scripts/hip-designation.patch makes star_get_designations() always
+# emit "HIP <n>" when star->hip is set, guarding against a duplicate
+# emission in the id-less-star fallback case.
+echo "==> [5/8] Patching vendor/ stars.c to expose HIP designations"
+HIP_PATCH_FILE="${REPO_ROOT}/scripts/hip-designation.patch"
+if grep -q "patched by indigenous-stellarium" "${VENDOR_DIR}/src/modules/stars.c" 2>/dev/null; then
+  echo "    already patched — skipping"
+else
+  (cd "${VENDOR_DIR}" && git apply "${HIP_PATCH_FILE}")
+  echo "    applied ${HIP_PATCH_FILE}"
+fi
+
+echo "==> [6/8] Building engine WASM (make js)"
 (
   cd "${VENDOR_DIR}"
   make js
 )
 
-echo "==> [6/7] Staging build/stellarium-web-engine.{js,wasm} -> web/public/engine/"
+echo "==> [7/8] Staging build/stellarium-web-engine.{js,wasm} -> web/public/engine/"
 mkdir -p "${ENGINE_OUT}"
 BUILT_JS="${VENDOR_DIR}/build/stellarium-web-engine.js"
 BUILT_WASM="${VENDOR_DIR}/build/stellarium-web-engine.wasm"
@@ -113,7 +133,7 @@ fi
 cp "${BUILT_JS}" "${ENGINE_OUT}/stellarium-web-engine.js"
 cp "${BUILT_WASM}" "${ENGINE_OUT}/stellarium-web-engine.wasm"
 
-echo "==> [7/7] Staging apps/test-skydata/ -> web/public/skydata/"
+echo "==> [8/8] Staging apps/test-skydata/ -> web/public/skydata/"
 rm -rf "${SKYDATA_OUT}"
 cp -R "${VENDOR_DIR}/apps/test-skydata" "${SKYDATA_OUT}"
 

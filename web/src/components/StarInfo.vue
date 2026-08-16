@@ -8,19 +8,29 @@
 // omits that section rather than filling it with a Western/Bayer
 // name. Selection logic itself lives in selection.js, not here.
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { onStarSelected } from '../selection.js';
+import { onStarSelected, onSelectionCleared } from '../selection.js';
 
 const selected = ref(null);
 let unsubscribe = null;
+let unsubscribeCleared = null;
 
 onMounted(() => {
   unsubscribe = onStarSelected((payload) => {
     selected.value = payload;
   });
+  // Without this, the card kept showing the previously-selected star's
+  // identity indefinitely after the user clicked empty sky, a planet,
+  // or a DSO — onStarSelected() correctly never fires for those, but
+  // nothing else ever reset `selected`. See onSelectionCleared()'s
+  // doc comment in selection.js.
+  unsubscribeCleared = onSelectionCleared(() => {
+    selected.value = null;
+  });
 });
 
 onUnmounted(() => {
   if (unsubscribe) unsubscribe();
+  if (unsubscribeCleared) unsubscribeCleared();
 });
 
 // obj.culturalDesignations() returns an ARRAY of name entries (verified
