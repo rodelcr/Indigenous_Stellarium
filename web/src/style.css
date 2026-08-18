@@ -13,4 +13,16 @@ body,
   height: 100%;
   overflow: hidden;
   background: #000;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+/* Form controls don't inherit font by default; without this they fall back
+   to the browser's UI font and break the monospace house style. */
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
 }

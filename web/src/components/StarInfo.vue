@@ -73,35 +73,41 @@ const primaryName = computed(() => {
   top: 1rem;
   right: 1rem;
   width: 240px;
-  background: rgba(15, 15, 25, 0.85);
-  color: #eee;
-  border-radius: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: var(--radius);
   padding: 0.75rem;
-  font: 13px/1.4 system-ui, sans-serif;
+  font-family: var(--font-mono);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
   z-index: 10;
 }
 
+/* The name the culture uses is the headline. Size and weight carry that,
+   not colour — a coloured highlight would compete with the sky. */
 .star-name {
   margin: 0 0 0.2rem;
-  font-size: 18px;
-  font-weight: 600;
-  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-bright);
 }
 
 .star-pronounce {
   margin: 0 0 0.2rem;
-  font-style: italic;
-  color: #bbb;
+  color: var(--text-dim);
 }
 
 .star-gloss {
   margin: 0 0 0.35rem;
-  color: #ccc;
+  color: var(--text);
 }
 
+/* Catalog number: present for provenance, deliberately the quietest thing
+   in the panel. */
 .star-hip {
   margin: 0;
   font-size: 11px;
-  color: #999;
+  color: var(--text-dim);
 }
 </style>

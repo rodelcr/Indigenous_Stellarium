@@ -54,9 +54,12 @@ onMounted(async () => {
   left: 1rem;
   right: 1rem;
   padding: 0.75rem 1rem;
-  background: rgba(120, 0, 0, 0.85);
-  color: #fff;
-  font: 14px/1.4 system-ui, sans-serif;
-  border-radius: 4px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--text-bright);
+  font-family: var(--font-mono);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  border-radius: var(--radius);
 }
 </style>

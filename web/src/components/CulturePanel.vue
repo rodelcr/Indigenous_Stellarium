@@ -154,27 +154,31 @@ function selectChild(child) {
   width: 280px;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  background: rgba(15, 15, 25, 0.85);
-  color: #eee;
-  border-radius: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: var(--radius);
   padding: 0.75rem;
-  font: 13px/1.4 system-ui, sans-serif;
+  font-family: var(--font-mono);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
   z-index: 10;
 }
 
 .panel-title {
   margin: 0 0 0.5rem;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: var(--font-size);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #bbb;
+  color: var(--text-dim);
 }
 
 .panel-error {
-  background: rgba(120, 0, 0, 0.6);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   padding: 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--radius);
   margin-bottom: 0.5rem;
 }
 
@@ -197,22 +201,22 @@ function selectChild(child) {
   text-align: left;
   background: none;
   border: none;
-  color: #eee;
+  color: var(--text);
   font: inherit;
-  font-weight: 600;
+  font-weight: 700;
   padding: 0.35rem 0.25rem;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 
 .bucket-header:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--control-bg-hover);
 }
 
 .disclosure {
   display: inline-block;
   width: 1em;
-  color: #999;
+  color: var(--text-dim);
 }
 
 .child-list {
@@ -227,40 +231,50 @@ function selectChild(child) {
   text-align: left;
   background: none;
   border: none;
-  color: #ddd;
+  color: var(--text);
   font: inherit;
   padding: 0.3rem 0.5rem;
   margin: 0.1rem 0;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: var(--radius);
+  /* Reserve the gutter the active marker occupies so selecting an entry
+     doesn't shift the list sideways. */
+  border-left: 2px solid transparent;
 }
 
 .child-button:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--control-bg-hover);
 }
 
+/* Selection is marked, not highlighted: a left rule and brighter text
+   rather than a coloured fill block. */
 .child-button.active {
-  background: rgba(90, 140, 255, 0.25);
-  outline: 1px solid rgba(120, 160, 255, 0.6);
+  background: var(--control-bg);
+  border-left-color: var(--accent);
+}
+
+.child-button.active .child-label {
+  color: var(--text-bright);
 }
 
 .child-label {
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .child-region {
   font-size: 11px;
-  color: #999;
+  color: var(--text-dim);
 }
 
+/* Placeholder cultures are invitations to contribute, not disabled rows —
+   they read at full strength, same as any other entry. */
 .child-button.placeholder .child-label {
-  color: #ddd;
+  color: var(--text);
 }
 
 .placeholder-badge {
   margin-top: 0.15rem;
-  font-size: 10.5px;
-  font-style: italic;
-  color: #c9b37a;
+  font-size: 11px;
+  color: var(--accent-dim);
 }
 </style>

@@ -1,0 +1,40 @@
+/*
+ * Shared visual tokens.
+ *
+ * House style is deliberately utilitarian: this is an instrument for reading
+ * the sky, not a consumer product. Monospace throughout, square corners, no
+ * glow/bloom/gradient/blur, and selection shown by a marker rather than a
+ * coloured fill. Anything that draws the eye should be sky data, not chrome.
+ *
+ * Components use these tokens rather than literal values so the style stays
+ * consistent as panels are added.
+ */
+
+:root {
+  /* Consolas first; the rest are fallbacks for non-Windows machines. */
+  --font-mono: Consolas, "DejaVu Sans Mono", Menlo, "Liberation Mono", monospace;
+  --font-size: 13px;
+  --line-height: 1.45;
+
+  /* Panels sit over the sky, so they stay dark and mostly transparent. */
+  --panel-bg: rgba(10, 10, 14, 0.88);
+  --panel-border: #3a3a42;
+
+  --text: #d8d8d2;
+  --text-dim: #8a8a92;
+  --text-bright: #ffffff;
+
+  /* Single accent, matched to the constellation overlay's amber so the UI
+     and the drawing read as one system. */
+  --accent: #ffd25a;
+  --accent-dim: #7a6430;
+
+  --danger-bg: #3d0f0f;
+  --danger-border: #6b1f1f;
+
+  --control-bg: #16161c;
+  --control-bg-hover: #22222a;
+  --control-border: #44444e;
+
+  --radius: 0;
+}

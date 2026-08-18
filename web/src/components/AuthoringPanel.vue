@@ -376,36 +376,38 @@ onUnmounted(() => {
   width: 320px;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  background: rgba(15, 15, 25, 0.85);
-  color: #eee;
-  border-radius: 6px;
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  color: var(--text);
+  border-radius: var(--radius);
   padding: 0.75rem;
-  font: 13px/1.4 system-ui, sans-serif;
+  font-family: var(--font-mono);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
   z-index: 10;
 }
 
 .panel-title {
   margin: 0 0 0.5rem;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: var(--font-size);
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #bbb;
+  color: var(--text-dim);
 }
 
 .panel-hint {
-  color: #999;
-  font-style: italic;
+  color: var(--text-dim);
   margin: 0.25rem 0;
 }
 
 .primary-button {
   width: 100%;
   padding: 0.5rem;
-  background: rgba(90, 140, 255, 0.35);
-  border: 1px solid rgba(120, 160, 255, 0.6);
-  color: #fff;
-  border-radius: 4px;
+  background: var(--control-bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: var(--radius);
   font: inherit;
   cursor: pointer;
 }
@@ -417,7 +419,7 @@ onUnmounted(() => {
 
 .drawing-status {
   margin-bottom: 0.5rem;
-  color: #ccc;
+  color: var(--text);
 }
 
 .star-list {
@@ -427,19 +429,18 @@ onUnmounted(() => {
 .segment {
   margin: 0 0 0.4rem;
   padding-left: 1.2rem;
-  color: #ddd;
+  color: var(--text);
 }
 
 .star-sub {
-  color: #999;
-  font-style: italic;
+  color: var(--text-dim);
   margin-left: 0.25rem;
 }
 
 .star-hip {
   margin-left: 0.4rem;
-  font-size: 10.5px;
-  color: #888;
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 .button-row {
@@ -451,16 +452,16 @@ onUnmounted(() => {
 .button-row button {
   flex: 1;
   padding: 0.35rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #eee;
-  border-radius: 4px;
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  color: var(--text);
+  border-radius: var(--radius);
   font: inherit;
   cursor: pointer;
 }
 
 .button-row button:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--control-bg-hover);
 }
 
 .meta-form {
@@ -474,7 +475,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  color: #ccc;
+  color: var(--text-dim);
   font-size: 12px;
 }
 
@@ -482,10 +483,10 @@ onUnmounted(() => {
 .meta-form textarea {
   font: inherit;
   padding: 0.3rem;
-  border-radius: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  border-radius: var(--radius);
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text-bright);
 }
 
 .meta-form textarea {
@@ -494,21 +495,21 @@ onUnmounted(() => {
 }
 
 .required {
-  color: #e0a34a;
+  color: var(--accent);
 }
 
 .provenance-title {
   margin: 0.5rem 0 0.1rem;
-  font-size: 12.5px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  color: #bbb;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
 }
 
 .provenance-note {
   margin: 0 0 0.3rem;
-  font-size: 11.5px;
-  color: #999;
+  font-size: 11px;
+  color: var(--text-dim);
 }
 
 .save-button {
