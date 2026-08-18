@@ -7,9 +7,14 @@ import { onMounted, ref } from 'vue';
 import { initEngine } from './engine.js';
 import CulturePanel from './components/CulturePanel.vue';
 import StarInfo from './components/StarInfo.vue';
+import AuthoringPanel from './components/AuthoringPanel.vue';
 
 const canvas = ref(null);
 const loadError = ref(null);
+// The taxonomy node id of the currently selected culture (including
+// placeholder nodes), or null before anything is selected. Just passed
+// straight through to AuthoringPanel — App.vue does not interpret it.
+const selectedCultureKey = ref(null);
 
 onMounted(async () => {
   try {
@@ -29,10 +34,9 @@ onMounted(async () => {
   <div v-if="loadError" class="load-error">
     Failed to load the sky engine. Check the console for details.
   </div>
-  <!-- culture-selected is not consumed here yet; Task 6's authoring panel
-       will listen for it once it's added as a sibling of CulturePanel. -->
-  <CulturePanel />
+  <CulturePanel @culture-selected="selectedCultureKey = $event" />
   <StarInfo />
+  <AuthoringPanel :culture-key="selectedCultureKey" />
 </template>
 
 <style scoped>
