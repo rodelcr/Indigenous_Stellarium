@@ -50,6 +50,65 @@
 
 import { getStel } from './engine.js';
 
+// --- Resolved-star-object cache (review finding #2) -----------------------
+//
+// `Module['getObj'](name)` (vendor/stellarium-web-engine/src/js/obj.js)
+// calls core_search(), which calls module_list_objs(module, NAN, ...) on
+// every top-level module — for the stars module that's `stars_list`
+// (modules/stars.c), the SAME function `listObjs` uses, and with an even
+// less restrictive magnitude filter (NAN) than the maxMag=0 that surfaced
+// the intermittent WASM RuntimeError documented in the task report. Before
+// this fix, projectHip() called stel.getObj('HIP ' + hip) for every star,
+// in every line, TWICE per frame (once for the stroke pass, once for the
+// dot pass), at 60fps, for as long as a draft stayed open — making the
+// overlay the heaviest consumer of that fragile path in the app.
+//
+// Fix, two parts:
+//  1. Cache the resolved engine object per HIP here, at module scope, so
+//     stel.getObj() (the fragile core_search() call) runs once per star
+//     per draft, not once per star per frame. A star's HIP->object mapping
+//     is stable for the life of the engine, so no time-based invalidation
+//     is needed — only "the draft's star set changed" (see pruneStarCache
+//     below).
+//  2. Each frame, project each star's screen point ONCE and reuse it for
+//     both the stroke and dot passes (see frame() below), instead of
+//     calling projectHip() twice.
+//
+// Deliberately a plain module-level Map, NOT a Vue ref: storing a raw WASM
+// object in a ref would let Vue's reactivity wrap it in a Proxy, a known
+// footgun documented elsewhere in this codebase (AuthoringPanel.vue's
+// nameCache note). overlay.js has no Vue import at all and should stay
+// that way.
+const starObjCache = new Map(); // hip -> engine object (only successful lookups are cached)
+
+// Only caches a successful lookup. A miss is NOT cached — a star that
+// fails to resolve (e.g. engine data still loading) should be retried on
+// a later frame rather than being permanently stuck as "not found" for
+// the rest of the draft, which caching null here would cause.
+function resolveStarObj(stel, hip) {
+  const cached = starObjCache.get(hip);
+  if (cached) return cached;
+  const obj = stel.getObj('HIP ' + hip);
+  if (obj) starObjCache.set(hip, obj);
+  return obj;
+}
+
+// Drops any cached entry whose HIP is no longer present in the draft's
+// current lines — called once per frame with the frame's own `lines`, so
+// undo/clear/pen-up naturally age stale entries out instead of leaking
+// them for the life of the page. Cheap: a draft's star count is small
+// (tens, not thousands), so building this Set every frame is not a
+// meaningful cost next to the WASM calls it's saving.
+function pruneStarCache(lines) {
+  const active = new Set();
+  for (const line of lines) {
+    for (const hip of line) active.add(hip);
+  }
+  for (const hip of starObjCache.keys()) {
+    if (!active.has(hip)) starObjCache.delete(hip);
+  }
+}
+
 function computeFovY(stel, aspect) {
   const fov = stel.core.fov; // radians — flows straight into projection.c math with no unit conversion (TYPE_ANGLE has no get/set conversion in this engine's attribute layer)
   if (aspect < 1) {
@@ -70,7 +129,7 @@ function computeFovY(stel, aspect) {
  * @returns {[number, number]|null}
  */
 export function projectHip(stel, hip, width, height) {
-  const obj = stel.getObj('HIP ' + hip);
+  const obj = resolveStarObj(stel, hip);
   if (!obj) return null;
 
   const radec = obj.getInfo('radec', stel.core.observer);
@@ -135,16 +194,27 @@ export function startOverlay(canvas, getLines) {
     ctx.clearRect(0, 0, width, height);
 
     const stel = getStel();
-    const lines = getLines();
-    if (stel && Array.isArray(lines) && lines.length > 0) {
+    const rawLines = getLines();
+    const lines = Array.isArray(rawLines) ? rawLines : [];
+    // Age out cache entries for stars no longer in the draft
+    // (undo/clear/pen-up) every frame — cheap relative to the WASM calls
+    // it saves (see pruneStarCache's doc comment).
+    pruneStarCache(lines);
+
+    if (stel && lines.length > 0) {
       ctx.strokeStyle = 'rgba(255, 210, 90, 0.95)';
       ctx.lineWidth = 2;
       ctx.fillStyle = 'rgba(255, 210, 90, 0.95)';
 
       for (const line of lines) {
+        // Project each star ONCE per frame and reuse the point for both
+        // the stroke pass and the dot pass below (previously projectHip()
+        // ran twice per star per frame — this halves the call volume,
+        // see the module-level doc comment on starObjCache).
+        const points = line.map((hip) => projectHip(stel, hip, width, height));
+
         let started = false;
-        for (const hip of line) {
-          const pt = projectHip(stel, hip, width, height);
+        for (const pt of points) {
           if (!pt) {
             started = false; // break the path across an off-screen gap
             continue;
@@ -161,8 +231,7 @@ export function startOverlay(canvas, getLines) {
 
         // Draw a small dot at each valid vertex, independent of the path
         // above, so single-star (not-yet-connected) lines are still visible.
-        for (const hip of line) {
-          const pt = projectHip(stel, hip, width, height);
+        for (const pt of points) {
           if (!pt) continue;
           ctx.beginPath();
           ctx.arc(pt[0], pt[1], 4, 0, 2 * Math.PI);

@@ -14,14 +14,59 @@
 // fallback), with the HIP number as small secondary text — the same
 // pattern StarInfo.vue already established. `nameCache` below exists
 // purely to carry that display info; authoring.js's draft never sees it.
+// The name-resolution logic itself lives in starDisplayName.js (review
+// finding #3) — this component only wires engine data into it.
 import { reactive, ref, onMounted, onUnmounted, computed } from 'vue';
 import { onStarSelected } from '../selection.js';
 import { startDraft } from '../authoring.js';
 import { startOverlay } from '../overlay.js';
 import { getStel } from '../engine.js';
+import { resolveStarDisplayName } from '../starDisplayName.js';
 
 const props = defineProps({
   cultureKey: { type: String, default: null },
+});
+
+// --- Culture label resolution (review finding #1) ---------------------
+// `cultureKey` is a raw taxonomy node id (e.g. "rapa_nui") — CulturePanel's
+// culture-selected emit contract only carries the id, and that is not a
+// name a community contributor should have to read. Mirrors CulturePanel's
+// own onMounted `fetch('/taxonomy.json')` pattern exactly (read there
+// first) rather than routing through App.vue, which stays thin and has no
+// taxonomy involvement here.
+//
+// Collision note: taxonomy.json uses "western" as BOTH a top-level bucket
+// id and a leaf child id. cultureKey values only ever come from
+// CulturePanel's child.id (never a bucket id), so this map is built from
+// leaf children ONLY — bucket ids are never inserted — which makes the
+// collision structurally impossible to hit here, without needing to key by
+// path.
+const cultureLabels = ref({});
+
+async function loadCultureLabels() {
+  try {
+    const res = await fetch('/taxonomy.json');
+    if (!res.ok) throw new Error(`Failed to fetch /taxonomy.json: ${res.status}`);
+    const data = await res.json();
+    const labels = {};
+    for (const bucket of data) {
+      for (const child of bucket.children || []) {
+        labels[child.id] = child.label;
+      }
+    }
+    cultureLabels.value = labels;
+  } catch (err) {
+    console.error('AuthoringPanel: failed to load taxonomy.json for culture label', err);
+    // Leave cultureLabels empty; cultureLabel below falls back to the raw
+    // id, which is correct (real, not invented) even if less readable.
+  }
+}
+
+// Falls back to the raw id only if the fetch failed or the id isn't found
+// (e.g. before taxonomy.json has loaded) — never fabricates a label.
+const cultureLabel = computed(() => {
+  if (!props.cultureKey) return props.cultureKey;
+  return cultureLabels.value[props.cultureKey] || props.cultureKey;
 });
 
 // --- Draft / drawing state -------------------------------------------
@@ -34,78 +79,21 @@ let draft = null;
 const drawing = ref(false);
 const stateVersion = ref(0);
 
-// hip -> { designations: string[], culturalNames: Array<object>, raDecLabel: string }
+// hip -> { designations: string[], culturalNames: Array<object>, radec:
+// [number,number,number]|null }
 // Populated directly in the onStarSelected callback from primitive/plain
 // values only — payload.obj (the raw WASM object) is never stored here or
 // anywhere else in this component, per the known Vue-Proxy-wrapping gotcha.
 const nameCache = new Map();
 
-const BAYER_GREEK = {
-  alf: 'α', bet: 'β', gam: 'γ', del: 'δ', eps: 'ε', zet: 'ζ', eta: 'η',
-  the: 'θ', iot: 'ι', kap: 'κ', lam: 'λ', mu: 'μ', nu: 'ν', xi: 'ξ',
-  omi: 'ο', pi: 'π', rho: 'ρ', sig: 'σ', tau: 'τ', ups: 'υ', phi: 'φ',
-  chi: 'χ', psi: 'ψ', ome: 'ω',
-};
-
-const CATALOG_PREFIX = /^(HIP|GAIA|TYC|2MASS|SAO|WDS|HD)\s/;
-const NAME_PREFIX = /^NAME\s+(.+)$/;
-const BAYER_PREFIX = /^\*\s+(\S+)\s+(.+)$/;
-
-// Priority order (see the course-correction this implements): (1) this
-// culture's native name, (2) a proper name or Bayer designation stripped
-// of its catalog prefix, (3) a neutral fallback derived from the star's
-// actual sky position — never the raw HIP string as the primary label.
-function extractProperOrBayer(designations) {
-  if (!Array.isArray(designations)) return null;
-  for (const d of designations) {
-    const m = NAME_PREFIX.exec(d);
-    if (m) return m[1];
-  }
-  for (const d of designations) {
-    const m = BAYER_PREFIX.exec(d);
-    if (m) {
-      const abbrev = m[1].replace(/\.$/, '').toLowerCase();
-      const greek = BAYER_GREEK[abbrev];
-      return greek ? `${greek} ${m[2]}` : `${m[1]} ${m[2]}`;
-    }
-  }
-  for (const d of designations) {
-    if (!CATALOG_PREFIX.test(d) && !d.startsWith('* ')) return d;
-  }
-  return null;
-}
-
-function formatRaDecLabel(stel, radec) {
-  try {
-    const [ra, dec] = stel.c2s(radec);
-    const raHours = stel.anp(ra) * (12 / Math.PI);
-    const decDeg = stel.anpm(dec) * (180 / Math.PI);
-    const h = Math.floor(raHours);
-    const m = Math.floor((raHours - h) * 60);
-    const sign = decDeg < 0 ? '−' : '+';
-    const d = Math.floor(Math.abs(decDeg));
-    return `Star near RA ${h}h${String(m).padStart(2, '0')}m, Dec ${sign}${d}°`;
-  } catch {
-    return 'Selected star';
-  }
-}
-
+// Display-name priority/denylist logic lives in starDisplayName.js
+// (pure, unit-tested there) — this just looks the cached info up and
+// hands it off, adding the hip number back on for the template's
+// secondary "HIP <n>" text.
 function displayFor(hip) {
   const info = nameCache.get(hip);
   if (!info) return { primary: 'Selected star', sub: null, hip };
-
-  const cultural =
-    Array.isArray(info.culturalNames) && info.culturalNames.length > 0
-      ? info.culturalNames[0]
-      : null;
-  if (cultural && cultural.name_native) {
-    return { primary: cultural.name_native, sub: cultural.name_pronounce || null, hip };
-  }
-
-  const properOrBayer = extractProperOrBayer(info.designations);
-  if (properOrBayer) return { primary: properOrBayer, sub: null, hip };
-
-  return { primary: info.raDecLabel || 'Selected star', sub: null, hip };
+  return { ...resolveStarDisplayName(info), hip };
 }
 
 // Segments mirror draft.getDraft().lines exactly (each entry is one
@@ -199,10 +187,15 @@ const overlayCanvas = ref(null);
 let stopOverlay = null;
 
 onMounted(() => {
+  loadCultureLabels();
+
   unsubscribeStarSelected = onStarSelected((payload) => {
     // Always cache display info for whatever star was just clicked (cheap,
     // keeps the cache honest even across culture switches), but only feed
-    // it into the draft while actively drawing.
+    // it into the draft while actively drawing. Store the raw radec
+    // vector, not a pre-formatted label — starDisplayName.js's
+    // formatRaDecLabel() is pure and does its own c2s/anp/anpm math, so no
+    // engine call is needed beyond this one getInfo() to get the vector.
     const stel = getStel();
     let radec = null;
     if (stel) {
@@ -215,7 +208,7 @@ onMounted(() => {
     nameCache.set(payload.hip, {
       designations: payload.designations,
       culturalNames: payload.culturalNames,
-      raDecLabel: stel && radec ? formatRaDecLabel(stel, radec) : 'Selected star',
+      radec,
     });
 
     if (!drawing.value || !draft) return;
@@ -256,7 +249,7 @@ onUnmounted(() => {
 
     <template v-else>
       <div class="drawing-status">
-        Drawing for <strong>{{ props.cultureKey }}</strong>
+        Drawing for <strong>{{ cultureLabel }}</strong>
       </div>
 
       <div class="star-list">
