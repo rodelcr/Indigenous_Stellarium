@@ -64,9 +64,16 @@ async function loadCultureLabels() {
 
 // Falls back to the raw id only if the fetch failed or the id isn't found
 // (e.g. before taxonomy.json has loaded) — never fabricates a label.
+//
+// While drawing, the label reflects `activeCultureKey` rather than
+// `props.cultureKey` directly: loading a saved draft (see loadDraft below)
+// can populate the authoring state for a culture that isn't the one
+// currently selected in CulturePanel, and the status line should describe
+// what's actually loaded, not what's merely selected in the tree.
 const cultureLabel = computed(() => {
-  if (!props.cultureKey) return props.cultureKey;
-  return cultureLabels.value[props.cultureKey] || props.cultureKey;
+  const key = drawing.value ? activeCultureKey.value : props.cultureKey;
+  if (!key) return key;
+  return cultureLabels.value[key] || key;
 });
 
 // --- Draft / drawing state -------------------------------------------
@@ -78,6 +85,12 @@ const cultureLabel = computed(() => {
 let draft = null;
 const drawing = ref(false);
 const stateVersion = ref(0);
+const activeCultureKey = ref(null);
+// Set when the current draft was loaded from a saved row (see loadDraft);
+// null for a fresh, never-saved draft. Purely informational (which list
+// entry is highlighted) — Save always POSTs a new row regardless (see
+// handleSave's note on why this isn't wired to PUT).
+const loadedDraftId = ref(null);
 
 // hip -> { designations: string[], culturalNames: Array<object>, radec:
 // [number,number,number]|null }
@@ -144,12 +157,75 @@ const hasAtLeastOneLine = computed(() => segments.value.some((line) => line.leng
 
 const canSave = computed(() => drawing.value && requiredFieldsFilled.value && hasAtLeastOneLine.value);
 
+// --- My drafts (Task 7) -----------------------------------------------
+// GET /api/drafts — the full saved-draft list, refreshed on mount and
+// after every successful save. No pagination (YAGNI for a demo-scale
+// list); ordering is whatever the API returns (most-recently-created
+// first, per db.py).
+const drafts = ref([]);
+const draftsError = ref(null);
+
+async function loadDrafts() {
+  try {
+    const res = await fetch('/api/drafts');
+    if (!res.ok) throw new Error(`Failed to fetch /api/drafts: ${res.status}`);
+    drafts.value = await res.json();
+  } catch (err) {
+    console.error('AuthoringPanel: failed to load drafts', err);
+    draftsError.value = err;
+  }
+}
+
+// Rehydrates a saved draft row (the API's DraftOut shape) back into a live
+// authoring.js state machine. authoring.js exposes no "load" primitive —
+// its getDraft() shape is fixed and not to be touched for this task — so
+// this replays the saved `lines` through the same addStar()/penUp() calls
+// a contributor's clicks would have produced, one committed polyline at a
+// time, then sets the metadata/provenance fields with setMeta().
+//
+// Stars replayed this way have no nameCache entry (they weren't just
+// clicked in the engine this session), so the star list falls back to
+// displayFor()'s existing "Selected star" wording — the same neutral
+// fallback used for a freshly-clicked star before its info arrives, not a
+// fabricated name. The overlay (overlay.js) resolves each HIP directly
+// against the engine regardless of nameCache, so the lines themselves
+// still reappear on screen.
+function loadDraft(saved) {
+  draft = startDraft(saved.culture_key);
+  nameCache.clear();
+  for (const line of saved.lines) {
+    for (const hip of line) draft.addStar(hip);
+    draft.penUp();
+  }
+
+  const loadedMeta = {
+    name_english: saved.name_english || '',
+    name_native: saved.name_native || '',
+    pronounce: saved.pronounce || '',
+    notes: saved.notes || '',
+    provenance: { ...emptyMeta().provenance, ...saved.provenance },
+  };
+  Object.assign(meta, loadedMeta);
+  draft.setMeta(loadedMeta);
+
+  activeCultureKey.value = saved.culture_key;
+  loadedDraftId.value = saved.id;
+  saveStatus.value = 'idle';
+  saveError.value = null;
+  drawing.value = true;
+  stateVersion.value++;
+}
+
 // --- Actions -------------------------------------------------------------
 function startConstellation() {
   if (!props.cultureKey) return;
   draft = startDraft(props.cultureKey);
   nameCache.clear();
   Object.assign(meta, emptyMeta());
+  activeCultureKey.value = props.cultureKey;
+  loadedDraftId.value = null;
+  saveStatus.value = 'idle';
+  saveError.value = null;
   drawing.value = true;
   stateVersion.value++;
 }
@@ -170,15 +246,47 @@ function clearDraft() {
   draft = null;
   nameCache.clear();
   Object.assign(meta, emptyMeta());
+  activeCultureKey.value = null;
+  loadedDraftId.value = null;
+  saveStatus.value = 'idle';
+  saveError.value = null;
   drawing.value = false;
   stateVersion.value++;
 }
 
-// Task 7 wires this to a POST of draft.getDraft(). For now it is
-// deliberately inert — this panel's job is the drawing/metadata UI, not
-// persistence.
-function handleSave() {
-  // no-op: backend integration lands in Task 7.
+// --- Save (Task 7) ------------------------------------------------------
+// 'idle' | 'saving' | 'saved' | 'error'
+const saveStatus = ref('idle');
+const saveError = ref(null);
+
+// Always POSTs a new draft row, even when the current state was loaded
+// from an existing one (loadedDraftId set) — PUT /api/drafts/{id} exists
+// on the backend for a future edit-in-place flow, but wiring it up is out
+// of scope here: the brief only asks for Save (create) and a drafts list
+// that reloads state, not an edit/resume-and-overwrite flow, and adding
+// that now would be scope creep past what Task 7 requires.
+async function handleSave() {
+  if (!draft) return;
+  saveStatus.value = 'saving';
+  saveError.value = null;
+  try {
+    const res = await fetch('/api/drafts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft.getDraft()),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      const detail = body && body.detail ? JSON.stringify(body.detail) : `HTTP ${res.status}`;
+      throw new Error(`Save failed: ${detail}`);
+    }
+    saveStatus.value = 'saved';
+    await loadDrafts();
+  } catch (err) {
+    console.error('AuthoringPanel: failed to save draft', err);
+    saveStatus.value = 'error';
+    saveError.value = err.message;
+  }
 }
 
 // --- Engine wiring ---------------------------------------------------
@@ -188,6 +296,7 @@ let stopOverlay = null;
 
 onMounted(() => {
   loadCultureLabels();
+  loadDrafts();
 
   unsubscribeStarSelected = onStarSelected((payload) => {
     // Always cache display info for whatever star was just clicked (cheap,
@@ -235,6 +344,25 @@ onUnmounted(() => {
 
     <div v-if="!props.cultureKey" class="panel-hint">
       Select a sky culture to begin authoring a constellation for it.
+    </div>
+
+    <div class="drafts-section">
+      <h3 class="drafts-title">My Drafts</h3>
+      <div v-if="draftsError" class="panel-hint">Failed to load saved drafts.</div>
+      <div v-else-if="drafts.length === 0" class="panel-hint">No drafts saved yet.</div>
+      <ul v-else class="drafts-list">
+        <li v-for="d in drafts" :key="d.id">
+          <button
+            type="button"
+            class="draft-item"
+            :class="{ active: loadedDraftId === d.id }"
+            @click="loadDraft(d)"
+          >
+            <span class="draft-name">{{ d.name_english || d.name_native || 'Untitled draft' }}</span>
+            <span class="draft-culture">{{ cultureLabels[d.culture_key] || d.culture_key }}</span>
+          </button>
+        </li>
+      </ul>
     </div>
 
     <button
@@ -351,10 +479,16 @@ onUnmounted(() => {
         </label>
       </form>
 
-      <button type="button" class="primary-button save-button" :disabled="!canSave" @click="handleSave">
-        Save
+      <button
+        type="button"
+        class="primary-button save-button"
+        :disabled="!canSave || saveStatus === 'saving'"
+        @click="handleSave"
+      >
+        {{ saveStatus === 'saving' ? 'Saving…' : 'Save' }}
       </button>
-      <p class="panel-hint save-hint">Saving will be enabled once backend support lands.</p>
+      <p v-if="saveStatus === 'saved'" class="panel-hint save-hint">Saved.</p>
+      <p v-else-if="saveStatus === 'error'" class="panel-hint save-hint save-error">{{ saveError }}</p>
     </template>
   </div>
 </template>
@@ -519,5 +653,75 @@ onUnmounted(() => {
 .save-hint {
   text-align: center;
   font-size: 11px;
+}
+
+.save-error {
+  text-align: left;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--text);
+  padding: 0.4rem;
+  border-radius: var(--radius);
+}
+
+.drafts-section {
+  margin-bottom: 0.75rem;
+}
+
+.drafts-title {
+  margin: 0 0 0.3rem;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.drafts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+/* Mirrors CulturePanel.vue's .child-button: selection is a left rule and
+   brighter text, never a coloured fill block. */
+.draft-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  padding: 0.3rem 0.5rem;
+  margin: 0.1rem 0;
+  cursor: pointer;
+  border-radius: var(--radius);
+  border-left: 2px solid transparent;
+}
+
+.draft-item:hover {
+  background: var(--control-bg-hover);
+}
+
+.draft-item.active {
+  background: var(--control-bg);
+  border-left-color: var(--accent);
+}
+
+.draft-item.active .draft-name {
+  color: var(--text-bright);
+}
+
+.draft-name {
+  font-weight: 400;
+}
+
+.draft-culture {
+  font-size: 11px;
+  color: var(--text-dim);
 }
 </style>
