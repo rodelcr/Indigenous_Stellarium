@@ -110,6 +110,54 @@ async def test_post_missing_provenance_entirely_is_422(client):
     assert res.status_code == 422
 
 
+async def test_post_whitespace_only_provenance_contributor_is_422(client):
+    draft = valid_draft()
+    draft["provenance"]["contributor"] = " "
+    res = await client.post("/api/drafts", json=draft)
+    assert res.status_code == 422
+
+
+async def test_post_whitespace_only_provenance_community_is_422(client):
+    draft = valid_draft()
+    draft["provenance"]["community"] = " "
+    res = await client.post("/api/drafts", json=draft)
+    assert res.status_code == 422
+
+
+async def test_post_whitespace_only_provenance_source_is_422(client):
+    draft = valid_draft()
+    draft["provenance"]["source"] = " "
+    res = await client.post("/api/drafts", json=draft)
+    assert res.status_code == 422
+
+
+async def test_post_whitespace_only_provenance_permission_is_422(client):
+    draft = valid_draft()
+    draft["provenance"]["permission"] = " "
+    res = await client.post("/api/drafts", json=draft)
+    assert res.status_code == 422
+
+
+async def test_post_whitespace_only_culture_key_is_422(client):
+    draft = valid_draft()
+    draft["culture_key"] = " "
+    res = await client.post("/api/drafts", json=draft)
+    assert res.status_code == 422
+
+
+async def test_post_strips_whitespace_from_optional_name_native(client):
+    # Optional fields still get whitespace stripped (not just the required
+    # ones) — a trailing space a contributor typed shouldn't be preserved
+    # verbatim, and stripping must not turn this optional field required.
+    draft = valid_draft()
+    draft["name_native"] = "  Te Kāhui o Matariki  "
+    res = await client.post("/api/drafts", json=draft)
+    assert res.status_code == 201
+    draft_id = res.json()["id"]
+    get_res = await client.get(f"/api/drafts/{draft_id}")
+    assert get_res.json()["name_native"] == "Te Kāhui o Matariki"
+
+
 async def test_pronounce_is_not_required(client):
     draft = valid_draft()
     assert "pronounce" not in draft

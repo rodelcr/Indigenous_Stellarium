@@ -23,7 +23,7 @@ from typing import List
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 import db
 
@@ -55,6 +55,13 @@ def reset_connection():
 
 
 class Provenance(BaseModel):
+    # Pydantic v2 does not strip whitespace by default, so without this a
+    # single space (" ") would pass min_length=1 and be stored as though it
+    # were complete provenance — exactly the placeholder path this system
+    # must never accept. Stripping first makes whitespace-only input fail
+    # the length check the same way empty-string input already does.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     contributor: str = Field(min_length=1)
     community: str = Field(min_length=1)
     source: str = Field(min_length=1)
@@ -62,6 +69,12 @@ class Provenance(BaseModel):
 
 
 class DraftIn(BaseModel):
+    # Applied to the whole model (not just culture_key) so free-text fields
+    # like name_native get the same "no meaningless leading/trailing
+    # whitespace" treatment. These fields stay optional either way — this
+    # only strips, it does not add a min_length constraint to them.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     culture_key: str = Field(min_length=1)
     name_english: str = ""
     name_native: str = ""
