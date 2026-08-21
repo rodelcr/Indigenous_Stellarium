@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
 
-from export_skyculture import export_culture  # noqa: E402
+from export_skyculture import DEFAULT_TAXONOMY_PATH, export_culture  # noqa: E402
 
 FULL_PROVENANCE = {
     "contributor": "Jane Contributor",
@@ -130,6 +130,72 @@ def test_export_culture_license_section_is_honest_not_asserted():
         # Must NOT assert a license on the community's behalf.
         assert "CC BY-SA" not in text
         assert "CC-BY" not in text
+
+
+def test_export_culture_includes_region_from_taxonomy():
+    # rapa_nui is a leaf under the "polynesian" bucket in the real
+    # data/taxonomy.json, with region "Rapa Nui (Easter Island)" — a
+    # placeholder culture, but its taxonomy entry (and hence its region)
+    # is real recorded data, not fabricated by the exporter.
+    taxonomy = json.loads(DEFAULT_TAXONOMY_PATH.read_text())
+    expected_region = next(
+        child["region"]
+        for bucket in taxonomy
+        for child in bucket.get("children", [])
+        if child["id"] == "rapa_nui"
+    )
+
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp)
+
+        culture_dir = export_culture("rapa_nui", [TE_MANU_DRAFT], dest)
+        with open(culture_dir / "index.json") as f:
+            data = json.load(f)
+
+        assert data["region"] == expected_region
+
+
+def test_export_culture_western_leaf_region_not_clobbered_by_bucket_id():
+    # taxonomy.json has a known collision: "western" is both a top-level
+    # bucket id (no region of its own) and the id of the one leaf culture
+    # inside that bucket (which does have a region). The region lookup
+    # must be scoped to leaf children only, so this must resolve to the
+    # leaf's real region, not silently disappear.
+    taxonomy = json.loads(DEFAULT_TAXONOMY_PATH.read_text())
+    expected_region = next(
+        child["region"]
+        for bucket in taxonomy
+        for child in bucket.get("children", [])
+        if child["id"] == "western"
+    )
+
+    western_draft = dict(TE_MANU_DRAFT)
+    western_draft["culture_key"] = "western"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp)
+
+        culture_dir = export_culture("western", [western_draft], dest)
+        with open(culture_dir / "index.json") as f:
+            data = json.load(f)
+
+        assert data["region"] == expected_region
+
+
+def test_export_culture_omits_region_for_unknown_culture_key_not_invented():
+    unknown_draft = dict(TE_MANU_DRAFT)
+    unknown_draft["culture_key"] = "not_a_real_culture_key"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp)
+
+        culture_dir = export_culture(
+            "not_a_real_culture_key", [unknown_draft], dest
+        )
+        with open(culture_dir / "index.json") as f:
+            data = json.load(f)
+
+        assert "region" not in data
 
 
 def test_export_culture_only_includes_drafts_for_the_given_culture():

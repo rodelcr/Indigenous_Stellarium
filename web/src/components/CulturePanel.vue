@@ -32,6 +32,39 @@ const expanded = ref({});
 // null when no culture is selected (first-load / stars-only state).
 const activeChild = ref(null);
 
+// Placeholder taxonomy nodes (skyculture_id === null) have no official
+// dataset, but a contributor may have exported an authored draft to
+// web/public/skycultures/<id>/ via scripts/export_skyculture.py (see
+// docs/DESIGN.md's Phase 1 round-trip: "authored culture loads back into
+// the viewer"). The exported directory is named after the draft's
+// culture_key, which for a placeholder IS the taxonomy node id (there is
+// no skyculture_id to use instead). This map records, per placeholder
+// child id, whether that probe found a draft — keyed by id rather than
+// by object reference since it's populated from a plain fetch, not from
+// the taxonomy walk itself.
+const draftAvailable = ref({});
+
+async function checkDraftAvailable(id) {
+  let available = false;
+  try {
+    const res = await fetch('/skycultures/' + id + '/index.json', { cache: 'no-store' });
+    if (res.ok) {
+      // res.ok alone isn't proof the file exists: the vite dev server's
+      // SPA history fallback answers ANY unmatched path with 200 + the
+      // app's index.html (text/html), not a 404 — confirmed against this
+      // exact endpoint while building this feature. Parse the body as
+      // JSON and check it looks like a sky-culture index (an `id`
+      // field) so that fallback HTML is correctly treated as "no draft"
+      // rather than a false positive.
+      const data = await res.json();
+      available = !!data && typeof data.id === 'string';
+    }
+  } catch (err) {
+    available = false;
+  }
+  draftAvailable.value = { ...draftAvailable.value, [id]: available };
+}
+
 // Sky culture ids that have already been handed to
 // stel.core.skycultures.addDataSource(). engine.js loads 'western' once at
 // boot (with rendering hidden), so it starts pre-populated to avoid a
@@ -47,6 +80,12 @@ onMounted(async () => {
       expanded.value[bucket.id] = true;
     }
     buckets.value = data;
+
+    for (const bucket of data) {
+      for (const child of bucket.children ?? []) {
+        if (child.placeholder) checkDraftAvailable(child.id);
+      }
+    }
   } catch (err) {
     console.error('CulturePanel: failed to load taxonomy.json', err);
     loadError.value = err;
@@ -70,8 +109,17 @@ function selectChild(child) {
 
   const core = stel.core;
 
-  if (child.skyculture_id) {
-    const id = child.skyculture_id;
+  // A placeholder with an exported draft on disk (see draftAvailable /
+  // checkDraftAvailable above) loads exactly like a real culture, using
+  // the taxonomy id itself as the sky-culture key — placeholders have no
+  // skyculture_id, and the export directory is named after the draft's
+  // culture_key, which is the taxonomy node id.
+  const loadableId =
+    child.skyculture_id ||
+    (child.placeholder && draftAvailable.value[child.id] ? child.id : null);
+
+  if (loadableId) {
+    const id = loadableId;
     if (!loadedCultureIds.has(id)) {
       core.skycultures.addDataSource({ url: '/skycultures/' + id, key: id });
       loadedCultureIds.add(id);
@@ -135,7 +183,13 @@ function selectChild(child) {
             >
               <span class="child-label">{{ child.label }}</span>
               <span v-if="child.region" class="child-region">{{ child.region }}</span>
-              <span v-if="child.placeholder" class="placeholder-badge">
+              <span
+                v-if="child.placeholder && draftAvailable[child.id]"
+                class="draft-badge"
+              >
+                draft available — view
+              </span>
+              <span v-else-if="child.placeholder" class="placeholder-badge">
                 no dataset yet — help us build it
               </span>
             </button>
@@ -276,5 +330,15 @@ function selectChild(child) {
   margin-top: 0.15rem;
   font-size: 11px;
   color: var(--accent-dim);
+}
+
+/* Same badge slot as .placeholder-badge, but a placeholder with an
+   exported draft is an actionable state (there is something to view), so
+   it reads in the full accent colour rather than the dimmed one used for
+   the plain "no dataset yet" invitation. Same single accent, no new hue. */
+.draft-badge {
+  margin-top: 0.15rem;
+  font-size: 11px;
+  color: var(--accent);
 }
 </style>

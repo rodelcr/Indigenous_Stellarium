@@ -50,6 +50,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = REPO_ROOT / "backend" / "drafts.sqlite"
 DEFAULT_DEST = REPO_ROOT / "web" / "public" / "skycultures"
+DEFAULT_TAXONOMY_PATH = REPO_ROOT / "data" / "taxonomy.json"
 
 # Verbatim wording pinned by the task-8 brief. Do not paraphrase — an
 # export that quietly softened or omitted this would misrepresent a
@@ -112,16 +113,64 @@ def _drafts_for_culture(culture_key: str, drafts: list[dict[str, Any]]) -> list[
     return [d for d in drafts if d.get("culture_key") == culture_key]
 
 
-def build_index(culture_key: str, drafts: list[dict[str, Any]]) -> dict[str, Any]:
+def _load_taxonomy_regions(taxonomy_path: Path | str) -> dict[str, str]:
+    """Build a {culture_key: region} map from data/taxonomy.json's LEAF
+    nodes only (the ones with a `skyculture_id`/`region`, no `children`).
+
+    Scoping to leaves is deliberate, not incidental: taxonomy.json has a
+    known id collision where `"western"` is BOTH a top-level bucket id
+    (`{"id": "western", "children": [...]}`, no `region` field of its
+    own) AND the id of the single leaf culture inside that bucket
+    (`{"id": "western", "region": "International (Western/IAU
+    tradition)"}`). A flat walk over every node keyed by `id` — bucket
+    and leaf alike — would let the region-less bucket node clobber (or
+    be clobbered by, depending on walk order) the leaf's real region.
+    Only ever descending into `bucket["children"]` and reading `id`/
+    `region` off of those means the top-level bucket ids are never
+    treated as lookup keys at all, so the collision cannot occur.
+    """
+    taxonomy_path = Path(taxonomy_path)
+    if not taxonomy_path.is_file():
+        return {}
+    with open(taxonomy_path) as f:
+        taxonomy = json.load(f)
+
+    regions: dict[str, str] = {}
+    for bucket in taxonomy:
+        for child in bucket.get("children", []):
+            child_id = child.get("id")
+            region = child.get("region")
+            if child_id and region:
+                regions[child_id] = region
+    return regions
+
+
+def build_index(
+    culture_key: str,
+    drafts: list[dict[str, Any]],
+    taxonomy_path: Path | str = DEFAULT_TAXONOMY_PATH,
+) -> dict[str, Any]:
     """Build the index.json dict for one culture from its drafts.
 
     Deliberately omits top-level keys this app has no source data for
-    (region, classification, highlight, thumbnail — all present on real
-    fetched cultures, see web/public/skycultures/*/index.json) rather than
+    (classification, highlight, thumbnail — all present on real fetched
+    cultures, see web/public/skycultures/*/index.json) rather than
     guessing at them. `common_names` (per-star names, distinct from a
     constellation's own common_name) is included as an empty object for
     schema-shape parity with real cultures — drafts carry no per-star
     naming data in Phase 1, so it has nothing to hold yet.
+
+    `region` (a real, non-optional top-level field per docs/DESIGN.md's
+    "Verified technical facts") is looked up from data/taxonomy.json,
+    keyed by `culture_key` restricted to leaf nodes (see
+    `_load_taxonomy_regions`) — every taxonomy leaf, real or placeholder,
+    already carries the community/region string a human curated when the
+    taxonomy was built, so this is recorded data, not a guess. If
+    `culture_key` isn't found there (an export for a culture_key with no
+    taxonomy entry at all), `region` is simply omitted, matching this
+    function's existing omit-rather-than-invent policy elsewhere in this
+    dict — inventing a plausible-sounding geographic attribution would be
+    fabricated cultural content, which this module refuses to do.
     """
     culture_drafts = _drafts_for_culture(culture_key, drafts)
 
@@ -143,11 +192,15 @@ def build_index(culture_key: str, drafts: list[dict[str, Any]]) -> dict[str, Any
 
         constellations.append(entry)
 
-    return {
-        "id": culture_key,
-        "constellations": constellations,
-        "common_names": {},
-    }
+    index: dict[str, Any] = {"id": culture_key}
+
+    region = _load_taxonomy_regions(taxonomy_path).get(culture_key)
+    if region:
+        index["region"] = region
+
+    index["constellations"] = constellations
+    index["common_names"] = {}
+    return index
 
 
 def _provenance_bits(provenance: dict[str, Any]) -> list[str]:
@@ -262,11 +315,18 @@ def build_description(culture_key: str, drafts: list[dict[str, Any]]) -> str:
 
 
 def export_culture(
-    culture_key: str, drafts: list[dict[str, Any]], dest: Path | str
+    culture_key: str,
+    drafts: list[dict[str, Any]],
+    dest: Path | str,
+    taxonomy_path: Path | str = DEFAULT_TAXONOMY_PATH,
 ) -> Path:
     """Write dest/<culture_key>/index.json and description.md from the
     drafts matching culture_key (drafts for other cultures in the same
     list are ignored). Returns the culture directory path.
+
+    `taxonomy_path` is forwarded to `build_index` for the `region` lookup
+    (see its docstring) and defaults to the repo's real
+    `data/taxonomy.json`; overriding it is only for tests.
 
     Writes are atomic (temp dir, then rename) matching the convention in
     scripts/fetch_skycultures.py, so a failure partway through never
@@ -282,7 +342,7 @@ def export_culture(
     tmp_dest.mkdir(parents=True)
 
     try:
-        index = build_index(culture_key, drafts)
+        index = build_index(culture_key, drafts, taxonomy_path)
         with open(tmp_dest / "index.json", "w") as f:
             json.dump(index, f, indent=2)
             f.write("\n")
