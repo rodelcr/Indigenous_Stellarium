@@ -479,6 +479,11 @@ onUnmounted(() => {
         </label>
       </form>
 
+      <p class="sandbox-reminder">
+        Demo sandbox: this draft is not reviewed by community stewards and
+        may not persist. See "Sources &amp; attribution" for details.
+      </p>
+
       <button
         type="button"
         class="primary-button save-button"
@@ -644,6 +649,12 @@ onUnmounted(() => {
   margin: 0 0 0.3rem;
   font-size: 11px;
   color: var(--text-dim);
+}
+
+.sandbox-reminder {
+  margin: 0 0 0.5rem;
+  font-size: 11px;
+  color: var(--accent-dim);
 }
 
 .save-button {

@@ -12,3 +12,5 @@ dist/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+deploy/.payload/
+web/public/attribution.json

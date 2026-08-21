@@ -8,6 +8,7 @@ import { initEngine } from './engine.js';
 import CulturePanel from './components/CulturePanel.vue';
 import StarInfo from './components/StarInfo.vue';
 import AuthoringPanel from './components/AuthoringPanel.vue';
+import InfoPanel from './components/InfoPanel.vue';
 
 const canvas = ref(null);
 const loadError = ref(null);
@@ -37,6 +38,7 @@ onMounted(async () => {
   <CulturePanel @culture-selected="selectedCultureKey = $event" />
   <StarInfo />
   <AuthoringPanel :culture-key="selectedCultureKey" />
+  <InfoPanel />
 </template>
 
 <style scoped>
