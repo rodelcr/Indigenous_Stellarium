@@ -20,6 +20,7 @@
 //     specified by the task interface — we don't look anything up with it.
 import { ref, onMounted } from 'vue';
 import { getStel } from '../engine.js';
+import { checkDraftAvailable as checkDraftAvailableImpl } from '../draftAvailability.js';
 
 const emit = defineEmits(['culture-selected']);
 
@@ -44,24 +45,14 @@ const activeChild = ref(null);
 // the taxonomy walk itself.
 const draftAvailable = ref({});
 
+// The actual availability check (including the SPA-fallback-vs-real-
+// draft distinction — see its own doc comment) lives in
+// draftAvailability.js as a pure, fetch-injectable function so it can be
+// unit-tested without mounting this component (no DOM env is configured
+// for this project's vitest setup). This wrapper just plumbs the result
+// into the component's reactive draftAvailable map.
 async function checkDraftAvailable(id) {
-  let available = false;
-  try {
-    const res = await fetch('/skycultures/' + id + '/index.json', { cache: 'no-store' });
-    if (res.ok) {
-      // res.ok alone isn't proof the file exists: the vite dev server's
-      // SPA history fallback answers ANY unmatched path with 200 + the
-      // app's index.html (text/html), not a 404 — confirmed against this
-      // exact endpoint while building this feature. Parse the body as
-      // JSON and check it looks like a sky-culture index (an `id`
-      // field) so that fallback HTML is correctly treated as "no draft"
-      // rather than a false positive.
-      const data = await res.json();
-      available = !!data && typeof data.id === 'string';
-    }
-  } catch (err) {
-    available = false;
-  }
+  const available = await checkDraftAvailableImpl(id);
   draftAvailable.value = { ...draftAvailable.value, [id]: available };
 }
 

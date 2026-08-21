@@ -216,6 +216,31 @@ def test_export_culture_only_includes_drafts_for_the_given_culture():
         assert names == ["Te Manu"]
 
 
+def test_export_culture_omits_lines_key_for_dark_constellation():
+    # A dark constellation (e.g. our own fetched kamilaroi culture's
+    # Gawaargay) is defined by the dust lanes BETWEEN stars, not by a
+    # polyline of stars -- real upstream data for it has no 'lines' key
+    # at all, not an empty list. build_index()'s `if lines:` guard
+    # (scripts/export_skyculture.py ~line 182) mirrors that: an empty
+    # `lines` list must not produce `"lines": []` in the export.
+    dark_draft = dict(TE_MANU_DRAFT)
+    dark_draft["id"] = 3
+    dark_draft["name_english"] = "Gawaargay"
+    dark_draft["lines"] = []
+
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp)
+
+        culture_dir = export_culture("rapa_nui", [dark_draft], dest)
+        with open(culture_dir / "index.json") as f:
+            data = json.load(f)
+
+        con = data["constellations"][0]
+        assert "lines" not in con, (
+            f"expected no 'lines' key for an empty-lines draft, got {con!r}"
+        )
+
+
 def test_export_culture_does_not_invent_content_for_missing_fields():
     minimal_draft = {
         "id": 2,
