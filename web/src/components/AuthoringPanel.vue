@@ -22,6 +22,7 @@ import { startDraft } from '../authoring.js';
 import { startOverlay } from '../overlay.js';
 import { getStel } from '../engine.js';
 import { resolveStarDisplayName } from '../starDisplayName.js';
+import { saveDraft, listDrafts, draftToJsonBlob, draftFilename } from '../draftStore.js';
 
 const props = defineProps({
   cultureKey: { type: String, default: null },
@@ -164,12 +165,16 @@ const canSave = computed(() => drawing.value && requiredFieldsFilled.value && ha
 // first, per db.py).
 const drafts = ref([]);
 const draftsError = ref(null);
+// 'server' when a backend answered, 'local' when drafts live only in this
+// browser (the free static deployment has no backend at all). Drives the
+// notice in the template so a contributor knows where their work went.
+const storageMode = ref('server');
 
 async function loadDrafts() {
   try {
-    const res = await fetch('/api/drafts');
-    if (!res.ok) throw new Error(`Failed to fetch /api/drafts: ${res.status}`);
-    drafts.value = await res.json();
+    const { mode, drafts: rows } = await listDrafts();
+    storageMode.value = mode;
+    drafts.value = rows;
   } catch (err) {
     console.error('AuthoringPanel: failed to load drafts', err);
     draftsError.value = err;
@@ -270,16 +275,8 @@ async function handleSave() {
   saveStatus.value = 'saving';
   saveError.value = null;
   try {
-    const res = await fetch('/api/drafts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(draft.getDraft()),
-    });
-    if (!res.ok) {
-      const body = await res.json().catch(() => null);
-      const detail = body && body.detail ? JSON.stringify(body.detail) : `HTTP ${res.status}`;
-      throw new Error(`Save failed: ${detail}`);
-    }
+    const { mode } = await saveDraft(draft.getDraft());
+    storageMode.value = mode;
     saveStatus.value = 'saved';
     await loadDrafts();
   } catch (err) {
@@ -287,6 +284,24 @@ async function handleSave() {
     saveStatus.value = 'error';
     saveError.value = err.message;
   }
+}
+
+// Hands the contributor their own draft as a file. Without a backend the
+// draft lives only in this browser, so there has to be a way to take it
+// away — otherwise clearing site data destroys their work. This is the raw
+// draft, not a sky culture: scripts/export_skyculture.py remains the real
+// path to Stellarium's format.
+function handleDownload() {
+  if (!draft) return;
+  const d = draft.getDraft();
+  const url = URL.createObjectURL(draftToJsonBlob(d));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = draftFilename(d);
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 // --- Engine wiring ---------------------------------------------------
@@ -492,7 +507,20 @@ onUnmounted(() => {
       >
         {{ saveStatus === 'saving' ? 'Saving…' : 'Save' }}
       </button>
-      <p v-if="saveStatus === 'saved'" class="panel-hint save-hint">Saved.</p>
+      <button
+        type="button"
+        class="secondary-button"
+        :disabled="!drawing"
+        @click="handleDownload"
+      >
+        Download draft (.json)
+      </button>
+
+      <p v-if="saveStatus === 'saved'" class="panel-hint save-hint">
+        {{ storageMode === 'local'
+          ? 'Saved in this browser only. Nothing was sent anywhere — download it to keep it.'
+          : 'Saved.' }}
+      </p>
       <p v-else-if="saveStatus === 'error'" class="panel-hint save-hint save-error">{{ saveError }}</p>
     </template>
   </div>
@@ -659,6 +687,29 @@ onUnmounted(() => {
 
 .save-button {
   margin-top: 0.25rem;
+}
+
+/* Quieter than .primary-button — the accent border is reserved for the
+   main action. */
+.secondary-button {
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.4rem;
+  background: var(--control-bg);
+  border: 1px solid var(--control-border);
+  color: var(--text);
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: var(--control-bg-hover);
+}
+
+.secondary-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .save-hint {
