@@ -84,6 +84,13 @@
         "skyculture_id": null,
         "region": "Andes (Peru, Bolivia, Ecuador)",
         "placeholder": true
+      },
+      {
+        "id": "yana_phuyu",
+        "label": "Yana Phuyu (dark clouds)",
+        "skyculture_id": null,
+        "region": "Southern Peruvian Andes (Cusco region)",
+        "placeholder": true
       }
     ]
   },

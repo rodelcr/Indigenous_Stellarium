@@ -1,0 +1,43 @@
+{
+  "id": "yana_phuyu",
+  "region": "America",
+  "classification": ["ethnographic"],
+  "constellations": [
+    {
+      "id": "CON yana_phuyu Machacuay",
+      "common_name": {"english": "Serpent", "native": "Mach'acuay"}
+    },
+    {
+      "id": "CON yana_phuyu Hanpatu",
+      "common_name": {"english": "Toad", "native": "Hanp'atu"}
+    },
+    {
+      "id": "CON yana_phuyu Yutu",
+      "common_name": {"english": "Tinamou", "native": "Yutu"}
+    },
+    {
+      "id": "CON yana_phuyu Yacana",
+      "common_name": {"english": "Llama", "native": "Yacana"}
+    },
+    {
+      "id": "CON yana_phuyu Unallamacha",
+      "common_name": {"english": "Baby Llama", "native": "Uñallamacha"}
+    },
+    {
+      "id": "CON yana_phuyu Atoq",
+      "common_name": {"english": "Fox", "native": "Atoq"}
+    },
+    {
+      "id": "CON yana_phuyu Yuthu",
+      "common_name": {"english": "Tinamou (second)", "native": "Yuthu"}
+    },
+    {
+      "id": "CON yana_phuyu Micheq",
+      "common_name": {"english": "Shepherd", "native": "Micheq"}
+    }
+  ],
+  "common_names": {
+    "HIP 71683": [{"native": "Llamacñawin", "english": "Eyes of the Llama"}],
+    "HIP 68702": [{"native": "Llamacñawin", "english": "Eyes of the Llama"}]
+  }
+}
