@@ -5,19 +5,11 @@
 # unchanged whether it's building from the real repo root or from this
 # assembled payload.
 #
-# The ONLY filtering this script does — and the ONLY place in the whole
-# deploy pipeline that filters — is excluding three sky-culture
-# directories from web/public/skycultures/ before anything is copied:
-#
-#   kamilaroi  — CC BY-NC-ND 4.0, permission granted to Stellarium
-#                developers specifically. We are not that party.
-#   lokono     — CC-BY-NC, permission granted to Stellarium Labs
-#                specifically (their mobile app). We are not that party.
-#   rapa_nui   — our own throwaway demo export, not real cultural content.
-#
-# These stay on disk locally (they're git-ignored generated data, needed
-# for local dev/testing) — this script only controls what gets copied
-# INTO the payload that gets pushed to the Space.
+# The ONLY filtering this script does is excluding sky-culture
+# directories from web/public/skycultures/ before anything is copied.
+# WHICH cultures, and why, lives in deploy/exclusions.sh — shared with the
+# static GitHub Pages build (deploy/pages.sh) so the two deploy paths
+# cannot drift apart on a licence question.
 #
 # Usage: deploy/assemble.sh [output_dir]
 #   output_dir defaults to deploy/.payload (git-ignored — see .gitignore).
@@ -26,9 +18,10 @@
 # itself. HF builds the Docker image remotely from what this assembles.
 set -euo pipefail
 
-EXCLUDE_CULTURES=(kamilaroi lokono rapa_nui)
-
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=exclusions.sh
+source "$SCRIPT_DIR/exclusions.sh"
+
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT="${1:-$SCRIPT_DIR/.payload}"
 
@@ -84,13 +77,7 @@ for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
 done
 
 # --- verification: fail loudly if any excluded culture slipped in ---
-for ex in "${EXCLUDE_CULTURES[@]}"; do
-  if [[ -e "$OUT/web/public/skycultures/$ex" ]]; then
-    echo "assemble.sh: ERROR: excluded culture '$ex' is present in the payload" \
-         "at $OUT/web/public/skycultures/$ex — refusing to proceed." >&2
-    exit 1
-  fi
-done
+assert_no_excluded_cultures "$OUT/web/public/skycultures"
 if grep -rlq -e "kamilaroi" -e "lokono" -e "rapa_nui" "$OUT/web/public/taxonomy.json" 2>/dev/null; then
   # taxonomy.json listing rapa_nui as a skyculture_id:null PLACEHOLDER (no
   # actual culture directory, just an invitation-to-contribute entry) is

@@ -11,10 +11,13 @@
 // vendor/stellarium-web-engine/apps/simple-html/stellarium-web-engine.html
 // (read that file before changing anything below) — it is the verified
 // ground truth for how this engine wants to be booted.
+import { assetUrl } from './assetUrl.js';
 
-const ENGINE_JS_URL = '/engine/stellarium-web-engine.js';
-const ENGINE_WASM_URL = '/engine/stellarium-web-engine.wasm';
-const SKYDATA_BASE_URL = '/skydata/';
+// Resolved against the deployment base (see assetUrl.js) so a GitHub
+// Pages project subpath works without changing anything in dev.
+const ENGINE_JS_URL = assetUrl('/engine/stellarium-web-engine.js');
+const ENGINE_WASM_URL = assetUrl('/engine/stellarium-web-engine.wasm');
+const SKYDATA_BASE_URL = assetUrl('/skydata') + '/';
 
 let stelInstance = null;
 let loadEnginePromise = null;

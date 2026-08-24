@@ -20,6 +20,7 @@
 // "available". Any of: a rejected fetch, a non-ok response, a body that
 // isn't valid JSON (the SPA fallback's HTML), or valid JSON missing a
 // string `id`, must resolve to `false` and must never throw.
+import { assetUrl } from './assetUrl.js';
 
 /**
  * @param {string} id - taxonomy node id (== draft culture_key for a
@@ -30,7 +31,7 @@
  */
 export async function checkDraftAvailable(id, fetchImpl = fetch) {
   try {
-    const res = await fetchImpl('/skycultures/' + id + '/index.json', { cache: 'no-store' });
+    const res = await fetchImpl(assetUrl('/skycultures/' + id + '/index.json'), { cache: 'no-store' });
     if (!res.ok) return false;
     // res.ok alone isn't proof the file exists -- see module doc above.
     // Parse the body as JSON and check it looks like a sky-culture index

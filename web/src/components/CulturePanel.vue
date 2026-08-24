@@ -21,6 +21,7 @@
 import { ref, onMounted } from 'vue';
 import { getStel } from '../engine.js';
 import { checkDraftAvailable as checkDraftAvailableImpl } from '../draftAvailability.js';
+import { assetUrl } from '../assetUrl.js';
 
 const emit = defineEmits(['culture-selected']);
 
@@ -64,8 +65,9 @@ const loadedCultureIds = new Set(['western']);
 
 onMounted(async () => {
   try {
-    const res = await fetch('/taxonomy.json');
-    if (!res.ok) throw new Error(`Failed to fetch /taxonomy.json: ${res.status}`);
+    const url = assetUrl('/taxonomy.json');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
     const data = await res.json();
     for (const bucket of data) {
       expanded.value[bucket.id] = true;
@@ -112,7 +114,7 @@ function selectChild(child) {
   if (loadableId) {
     const id = loadableId;
     if (!loadedCultureIds.has(id)) {
-      core.skycultures.addDataSource({ url: '/skycultures/' + id, key: id });
+      core.skycultures.addDataSource({ url: assetUrl('/skycultures/' + id), key: id });
       loadedCultureIds.add(id);
     }
     core.skycultures.current_id = id;
@@ -163,7 +165,22 @@ function selectChild(child) {
         </button>
         <ul v-show="expanded[bucket.id]" class="child-list">
           <li v-for="child in bucket.children" :key="child.id">
+            <!-- A culture this deployment is not permitted to redistribute
+                 (deploy/exclusions.json, applied by deploy/filter_taxonomy.py).
+                 It stays visible in the tree — quietly deleting a community
+                 would hide an unresolved licence question — but it is not
+                 interactive, because there is nothing here to show and it is
+                 not an invitation to contribute either. The reason is stated
+                 verbatim rather than dressed up as "no dataset yet", which
+                 would wrongly imply the community has no recorded sky
+                 knowledge. It does; we lack permission to republish it. -->
+            <div v-if="child.excluded" class="child-excluded">
+              <span class="child-label">{{ child.label }}</span>
+              <span v-if="child.region" class="child-region">{{ child.region }}</span>
+              <span class="excluded-note">{{ child.exclusion_reason }}</span>
+            </div>
             <button
+              v-else
               type="button"
               class="child-button"
               :class="{
@@ -321,6 +338,30 @@ function selectChild(child) {
   margin-top: 0.15rem;
   font-size: 11px;
   color: var(--accent-dim);
+}
+
+/* A withheld culture. Same layout as a child button so it sits in the tree
+   as an equal entry, but with no interactive affordance — no hover, no
+   pointer, no accent. The label keeps full strength: the community is not
+   the thing being de-emphasised, the missing permission is. */
+.child-excluded {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  cursor: default;
+}
+
+.child-excluded .child-label {
+  color: var(--text);
+}
+
+.excluded-note {
+  margin-top: 0.15rem;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-dim);
 }
 
 /* Same badge slot as .placeholder-badge, but a placeholder with an

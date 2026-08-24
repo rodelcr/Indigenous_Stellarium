@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "The single source of truth for which sky cultures are kept OUT of every",
+    "public deployment of this project. Read by deploy/exclusions.sh (the two",
+    "shell deploy paths) and deploy/filter_taxonomy.py (the culture tree), so",
+    "no deploy path can drift from another on a licence question.",
+    "",
+    "Reusing an excluded culture's data SHAPE is fine; copying its CONTENT is",
+    "not. Both licence exclusions are reversible by asking the authors, and",
+    "that ask is worth making — see docs/GOVERNANCE.md.",
+    "",
+    "'reason' is rendered in the deployed UI, so it must be accurate and",
+    "must not imply the community has no sky knowledge recorded. It has;",
+    "we are the ones without permission to redistribute it."
+  ],
+  "cultures": [
+    {
+      "id": "kamilaroi",
+      "kind": "licence",
+      "licence": "CC BY-NC-ND 4.0",
+      "permitted_redistributor": "the Stellarium developers",
+      "reason": "Not shown in this deployment. Its licence (CC BY-NC-ND 4.0) grants redistribution permission to the Stellarium developers specifically, and this project is not that party. The data exists and is published upstream — we lack permission to republish it here."
+    },
+    {
+      "id": "lokono",
+      "kind": "licence",
+      "licence": "CC BY-NC",
+      "permitted_redistributor": "Stellarium Labs",
+      "reason": "Not shown in this deployment. Its licence (CC BY-NC) grants redistribution permission to Stellarium Labs specifically, and this project is not that party. The data exists and is published upstream — we lack permission to republish it here."
+    },
+    {
+      "id": "rapa_nui",
+      "kind": "demo-artifact",
+      "reason": "This project's own throwaway demo export from testing the authoring round-trip. Not real cultural content, and must never be published as though it were."
+    }
+  ]
+}

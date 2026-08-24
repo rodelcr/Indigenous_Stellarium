@@ -27,6 +27,25 @@
 // components.
 import { ref, onMounted } from 'vue';
 import { renderInlineMarkdownLinks } from '../markdownLinks.js';
+import { assetUrl } from '../assetUrl.js';
+
+// Deployment-specific facts, injected at build time. Two of the claims in
+// this panel are deployment-dependent and BOTH must be accurate:
+//
+//   * The AGPL-3.0 source link is a licence obligation, not a courtesy.
+//     A link that points at the wrong repository does not satisfy §13.
+//   * What happens to a contributor's draft differs by deploy: the static
+//     build has no backend at all, so drafts never leave the visitor's own
+//     browser, whereas the container build stores them server-side on
+//     ephemeral hosting. Telling a visitor the wrong one is a consent
+//     problem, not a copy nit.
+//
+// Defaults describe the container deploy; deploy/pages.sh overrides them.
+const SOURCE_URL =
+  import.meta.env.VITE_SOURCE_URL ||
+  'https://github.com/rodelcr/Indigenous_Stellarium';
+const DEPLOY_KIND = import.meta.env.VITE_DEPLOY_KIND || 'server';
+const isStatic = DEPLOY_KIND === 'static';
 
 const open = ref(false);
 const cultures = ref([]);
@@ -34,8 +53,9 @@ const loadError = ref(null);
 
 onMounted(async () => {
   try {
-    const res = await fetch('/attribution.json');
-    if (!res.ok) throw new Error(`Failed to fetch /attribution.json: ${res.status}`);
+    const url = assetUrl('/attribution.json');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
     cultures.value = await res.json();
   } catch (err) {
     // Non-fatal: the always-visible badge and AGPL link below don't
@@ -51,8 +71,14 @@ onMounted(async () => {
 <template>
   <div class="sandbox-badge">
     <p class="sandbox-text">
-      Demo sandbox — drafts may not persist, and submissions are not yet
-      reviewed by community stewards.
+      <template v-if="isStatic"
+        >Demo sandbox — drafts stay in your own browser, and submissions are
+        not yet reviewed by community stewards.</template
+      >
+      <template v-else
+        >Demo sandbox — drafts may not persist, and submissions are not yet
+        reviewed by community stewards.</template
+      >
     </p>
     <button type="button" class="info-toggle" @click="open = !open">
       {{ open ? 'Close' : 'Sources & attribution' }}
@@ -70,8 +96,15 @@ onMounted(async () => {
           contribution intake.
         </p>
         <ul>
-          <li>
-            Saved drafts are session/storage-scoped. This Space runs on
+          <li v-if="isStatic">
+            This deployment has no backend. Drafts you save are stored only
+            in your own browser and are never transmitted anywhere — not to
+            us, not to anyone. Clearing your browser data deletes them, and
+            they will not follow you to another device. Use the download
+            button to keep a copy.
+          </li>
+          <li v-else>
+            Saved drafts are session/storage-scoped. This deployment runs on
             free-tier hosting with ephemeral storage, so drafts saved here
             can be lost on a rebuild or restart.
           </li>
@@ -96,13 +129,12 @@ onMounted(async () => {
           own modifications.
         </p>
         <p>
-          This Space's own source (Dockerfile, backend, frontend) is
-          published in
-          <a
-            href="https://huggingface.co/spaces/rodelcr/indigenous-stellarium/tree/main"
-            target="_blank"
-            rel="noopener noreferrer"
-            >this Space's own repository</a
+          This deployment's own complete source — frontend, backend, build
+          and export tooling, and the patches carried against the engine —
+          is published at
+          <a :href="SOURCE_URL" target="_blank" rel="noopener noreferrer">{{
+            SOURCE_URL
+          }}</a
           >.
         </p>
       </section>

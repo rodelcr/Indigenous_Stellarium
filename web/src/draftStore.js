@@ -20,6 +20,8 @@
 // the backend enforces, which is exactly the guarantee this project cannot
 // afford to lose. Only an unreachable server falls back.
 
+import { assetUrl } from './assetUrl.js';
+
 const STORAGE_KEY = 'indigenous-stellarium.drafts.v1';
 
 /** Fields that must be present and non-blank on every draft. Mirrors the
@@ -79,7 +81,7 @@ function writeLocal(list) {
 export async function saveDraft(draft, { fetchImpl = globalThis.fetch } = {}) {
   let res;
   try {
-    res = await fetchImpl('/api/drafts', {
+    res = await fetchImpl(assetUrl('/api/drafts'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(draft),
@@ -123,7 +125,7 @@ function saveLocal(draft) {
  */
 export async function listDrafts({ fetchImpl = globalThis.fetch } = {}) {
   try {
-    const res = await fetchImpl('/api/drafts');
+    const res = await fetchImpl(assetUrl('/api/drafts'));
     if (res.status === 404 || !res.ok) return { mode: 'local', drafts: readLocal() };
     return { mode: 'server', drafts: await res.json() };
   } catch (err) {

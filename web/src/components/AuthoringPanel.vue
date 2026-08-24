@@ -23,6 +23,7 @@ import { startOverlay } from '../overlay.js';
 import { getStel } from '../engine.js';
 import { resolveStarDisplayName } from '../starDisplayName.js';
 import { saveDraft, listDrafts, draftToJsonBlob, draftFilename } from '../draftStore.js';
+import { assetUrl } from '../assetUrl.js';
 
 const props = defineProps({
   cultureKey: { type: String, default: null },
@@ -32,7 +33,7 @@ const props = defineProps({
 // `cultureKey` is a raw taxonomy node id (e.g. "rapa_nui") — CulturePanel's
 // culture-selected emit contract only carries the id, and that is not a
 // name a community contributor should have to read. Mirrors CulturePanel's
-// own onMounted `fetch('/taxonomy.json')` pattern exactly (read there
+// own onMounted taxonomy.json fetch pattern exactly (read there
 // first) rather than routing through App.vue, which stays thin and has no
 // taxonomy involvement here.
 //
@@ -46,8 +47,9 @@ const cultureLabels = ref({});
 
 async function loadCultureLabels() {
   try {
-    const res = await fetch('/taxonomy.json');
-    if (!res.ok) throw new Error(`Failed to fetch /taxonomy.json: ${res.status}`);
+    const url = assetUrl('/taxonomy.json');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
     const data = await res.json();
     const labels = {};
     for (const bucket of data) {
