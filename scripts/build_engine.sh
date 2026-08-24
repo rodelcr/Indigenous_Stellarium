@@ -24,6 +24,18 @@ VENDOR_DIR="${REPO_ROOT}/vendor/stellarium-web-engine"
 ENGINE_OUT="${REPO_ROOT}/web/public/engine"
 SKYDATA_OUT="${REPO_ROOT}/web/public/skydata"
 ENGINE_REPO_URL="https://github.com/Stellarium/stellarium-web-engine"
+# Pinned commit. The three patches this script applies match against context
+# lines in upstream source; an unpinned clone means a future upstream edit
+# near any patched hunk turns a reproducible build into a failed `git apply`
+# — or, worse, a build that succeeds against code we never reviewed.
+#
+# The engine CORE has been dormant since ~Dec 2021, but the repository is
+# NOT dormant: this SHA is a dependabot bump dated 2026-08-11. "Nobody
+# touches it" was an assumption worth not relying on.
+#
+# To move the pin deliberately: update this SHA, re-run this script from a
+# clean vendor/, and confirm all three patches still apply.
+ENGINE_COMMIT="5403e930416f6dc1dbcca08486a045dd8be67f53"
 
 echo "==> [1/8] Checking toolchain (emcc, scons)"
 if ! command -v emcc >/dev/null 2>&1; then
@@ -40,10 +52,33 @@ echo "    scons: $(scons --version | sed -n '2p')"
 echo "==> [2/8] Fetching stellarium-web-engine into vendor/"
 if [ -d "${VENDOR_DIR}/.git" ]; then
   echo "    vendor/stellarium-web-engine already present — skipping clone"
+elif [ -e "${VENDOR_DIR}" ]; then
+  # A directory with no .git is a partial or interrupted prior clone. Say so
+  # rather than letting `git clone` fail with a generic "already exists".
+  echo "ERROR: ${VENDOR_DIR} exists but is not a git checkout — likely an" >&2
+  echo "       interrupted clone. Remove it and re-run this script." >&2
+  exit 1
 else
   mkdir -p "${REPO_ROOT}/vendor"
   git clone "${ENGINE_REPO_URL}" "${VENDOR_DIR}"
 fi
+
+# Check out the pinned commit every run, not only after a fresh clone, so an
+# existing vendor/ checkout left on some other revision is corrected rather
+# than silently built from.
+ACTUAL_COMMIT="$(git -C "${VENDOR_DIR}" rev-parse HEAD)"
+if [ "${ACTUAL_COMMIT}" != "${ENGINE_COMMIT}" ]; then
+  echo "    checking out pinned commit ${ENGINE_COMMIT:0:12}"
+  git -C "${VENDOR_DIR}" fetch --quiet origin "${ENGINE_COMMIT}" 2>/dev/null || \
+    git -C "${VENDOR_DIR}" fetch --quiet origin
+  git -C "${VENDOR_DIR}" checkout --quiet "${ENGINE_COMMIT}" || {
+    echo "ERROR: pinned engine commit ${ENGINE_COMMIT} not found upstream." >&2
+    echo "       If upstream rewrote history, update ENGINE_COMMIT in this" >&2
+    echo "       script deliberately and re-verify the three patches apply." >&2
+    exit 1
+  }
+fi
+echo "    engine at $(git -C "${VENDOR_DIR}" rev-parse --short HEAD) (pinned)"
 
 # The engine's SConstruct is from ~Dec 2021 and does not build cleanly
 # against a 2026-era Emscripten toolchain. scripts/engine-emscripten6-compat.patch
