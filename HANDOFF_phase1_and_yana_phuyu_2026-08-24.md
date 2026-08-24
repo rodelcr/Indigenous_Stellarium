@@ -17,7 +17,8 @@ A working planetarium viewer where **indigenous constellations are the default a
 - **16 sky-culture directories on disk**; 13 shippable, 2 excluded on licence grounds, 1 authored here.
 - **3 engine patches** carried against a codebase frozen since Dec 2021, all reproducible from a clean clone.
 
-**Not done:** Task 9 (project docs), the whole-branch review, and deployment.
+**Not done:** the whole-branch review. (Task 9 and the deploy landed later the
+same day — see the addendum at the end of this file.)
 
 ---
 
@@ -116,3 +117,86 @@ Working records in `.superpowers/sdd/we-need-to-build-cheerful-cosmos/` (git-ign
 2. `scripts/build_engine.sh` then `scripts/fetch_skycultures.py` to regenerate ignored artifacts.
 3. `cd web && npx vitest run` (68) and `backend/.venv/bin/pytest tests/ backend/ -q` (42).
 4. **Never run installers in a subagent.** Front-load them.
+
+
+---
+
+# ADDENDUM — Task 9 and the GitHub Pages deploy (same day, after the OS update)
+
+**Live at <https://rodelcr.github.io/Indigenous_Stellarium/>.** Source:
+<https://github.com/rodelcr/Indigenous_Stellarium> (public, AGPL-3.0),
+default branch `phase1-viewer-authoring`, build artifact on `gh-pages`.
+
+**Phase 1 is 9/9. 128 tests passing** (74 frontend, 54 backend/scripts),
+up from 110.
+
+## Task 9 — `d011375`
+
+`CLAUDE.md`, `docs/GOVERNANCE.md`, and a rewritten `README.md`. The
+governance draft says in its first line that it is a proposal written by the
+builders and ratified by nobody, and it ends with five open problems it
+cannot resolve alone rather than leaving them to be found later.
+
+## Deploy — `c6e081a`
+
+**A real defect surfaced while wiring this up.** `kamilaroi` and `lokono`
+carry **live `skyculture_id`s in `data/taxonomy.json`** while their
+directories are excluded from every deploy — so both rendered as clickable
+cultures that silently failed to load. **This affected the existing container
+deploy too**; `assemble.sh`'s note said "verify no OTHER excluded id is wired
+in", and two were.
+
+Fixed by `deploy/filter_taxonomy.py`. The interesting part is what it
+deliberately does *not* do:
+
+- **It does not delete the node.** Quietly removing a community is the wrong
+  answer for a project about visibility, and it would hide an unresolved
+  licence question.
+- **It does not mark it a placeholder.** That badge reads "no dataset yet —
+  help us build it", which is **false**: the data exists and is published
+  upstream. Saying otherwise misrepresents the community's record and could
+  invite someone to re-contribute knowledge already recorded.
+
+It clears `skyculture_id`, marks `excluded: true`, and states the reason
+verbatim. `CulturePanel.vue` renders it as a non-interactive entry.
+
+**The exclusion list now lives in `deploy/exclusions.json`**, read by both
+shell deploy paths and the taxonomy filter. A licence exclusion that applied
+to one deploy and not another would look fine while being the worst failure
+this project has.
+
+**Two claims in the app were wrong for a static deploy**, both inherited from
+the Hugging Face Space copy, both now injected at build time:
+1. The **AGPL-3.0 source link pointed at a Hugging Face Space**. That is a
+   §13 obligation, not a courtesy link.
+2. The storage text described **ephemeral server storage**. The static build
+   has no backend; drafts never leave the visitor's browser. Stronger claim,
+   and getting it backwards is a consent problem, not a copy nit.
+
+**Base paths.** Every asset was root-absolute, which 404s under a Pages
+project subpath. `web/src/assetUrl.js` routes them through
+`import.meta.env.BASE_URL`. The doubled-slash case is unit-tested *because it
+cannot appear in dev*, where the base is `/`.
+
+**`pages.sh` verifies the artifact, not the intent:** no excluded culture in
+the output, no taxonomy entry pointing at unshipped data, attribution
+matching the shipped set exactly, the AGPL link actually present in the
+bundle, `index.html` referencing the base. Building and publishing are
+separate commands on purpose.
+
+**Verified live**, not just locally: Māori's `index.json` serves 6
+constellations with real HIP polylines, `kamilaroi/index.json` returns 404,
+and the deployed taxonomy marks exactly `lokono` and `kamilaroi` as excluded
+with 13 loadable cultures. One false alarm along the way — the first
+screenshot showed a blank sky, which was a cold cache mid-load, not a bug.
+
+## What is still open
+
+1. **The whole-branch review has never been run.** Deferred minors are in the
+   ledger.
+2. **Localisation** — `engine.js` still passes a no-op `translateFn`.
+3. The four decisions for Rodrigo listed above are unchanged: the Araoz
+   Cartagena permissions, the two licence exclusions (worth asking — the
+   Kamilaroi exclusion costs us Gawaargay), widening the authoring model
+   beyond polylines, and sacred-site geolocation before the horizon feature
+   is built.
