@@ -1,81 +1,168 @@
 # Indigenous Stellarium
 
-A web sky viewer that makes indigenous constellations first-class citizens
-of the night sky — shown by default, alongside (not subordinate to) the
+A web sky viewer that makes indigenous constellations first-class citizens of
+the night sky — shown by default, alongside (not subordinate to) the
 Western/IAU constellations, which are off unless a viewer chooses them.
-Community members can also **contribute their own constellations and
-stories**: click stars on the sky to define a constellation's members and
-line segments, attach names and provenance, and (in later phases) attach
-richer story media. Knowledge is organized in a hierarchical culture
-taxonomy (e.g. Polynesian and South American cultural buckets, extensible
-to more regions) rather than flattened into one undifferentiated list.
 
-This repository does not define which cultures or stories appear — that is
-the point of the contribution mechanism. Constellation and story content is
-never invented here; it comes only from the official
+Community members can also **contribute their own constellations**: click
+stars on the sky to define a constellation's members and line segments,
+attach names and a provenance record, save the draft, and export it into
+Stellarium's native sky-culture format — which both this viewer and desktop
+Stellarium ≥ v24.4 can load. Knowledge is organised in a hierarchical culture
+taxonomy (Polynesian, South American, and others, extensible) rather than
+flattened into one undifferentiated list.
+
+**This repository does not decide which cultures or stories appear.** That is
+the point of the contribution mechanism. Content is never invented here: it
+comes either verbatim from the official
 [stellarium-skycultures](https://github.com/Stellarium/stellarium-skycultures)
-repository (with its attribution preserved) or from content authored and
-submitted by community contributors through this platform.
+repository, with its attribution preserved, or from contributors through this
+platform.
 
-See [`docs/DESIGN.md`](docs/DESIGN.md) for the full project spec (goals,
-decisions, data model, and the verified `stellarium-web-engine` API notes
-this project builds on).
+Read [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md) before contributing anything
+touching cultural content. It is a draft, and disagreeing with it is useful.
+
+---
+
+## Status — Phase 1, a demo
+
+Phase 1 is a **viewer + authoring demo**, built to be shown to communities and
+potential collaborators so the project can recruit per-culture stewards. It is
+not a production contribution pipeline, and the deployed app says so.
+
+**There is no community review of anything submitted to the demo.** The
+steward model in `docs/GOVERNANCE.md` does not exist yet in code. Authoring in
+the demo demonstrates a mechanism; it is not a live intake of cultural
+knowledge. Drafts saved in the static deployment stay in your own browser and
+are never transmitted anywhere.
+
+Working today: 13 sky cultures render; stars are clickable and show their name
+in the active culture first and their catalogue number second; constellations
+can be authored by clicking stars, with a live overlay and required
+provenance; drafts persist; authored cultures export to Stellarium's native
+format and load back into the viewer.
+
+Not built yet: accounts, stewards, review, restricted visibility, the story
+archive, and interface localisation. See the roadmap in
+[`docs/GOVERNANCE.md`](docs/GOVERNANCE.md).
 
 ## Architecture
 
-- **Engine:** [`stellarium-web-engine`](https://github.com/Stellarium/stellarium-web-engine)
-  (C, compiled to WebAssembly) — the rendering core.
-- **Frontend:** Vue 3 + Vite, driving the compiled engine directly (the
-  engine repo's own Vue-2-era frontend is used only as a reference).
-- **Backend:** FastAPI + SQLite, for persisting authored constellation
-  drafts.
-- **Export tooling:** Python scripts that convert authored drafts into
-  Stellarium's native sky-culture format (`index.json` + `description.md`),
-  consumable by both this viewer and desktop Stellarium ≥ v24.4.
+- **Engine** — [`stellarium-web-engine`](https://github.com/Stellarium/stellarium-web-engine)
+  (C, compiled to WebAssembly). Upstream has been dormant since Dec 2021;
+  this project carries three patches against it, applied reproducibly from a
+  clean clone.
+- **Frontend** — Vue 3 + Vite, plain JS, driving the compiled engine
+  directly. The engine repo's own Vue-2-era frontend is a reference only.
+- **Backend** — FastAPI + stdlib `sqlite3`, no ORM. Optional: the frontend
+  falls back to browser storage when no backend is reachable, which is what
+  makes a fully static deployment possible.
+- **Export tooling** — Python that converts drafts into `index.json` +
+  `description.md`.
 
-## License
+See [`docs/DESIGN.md`](docs/DESIGN.md) for the full spec and the verified
+engine API notes, and [`CLAUDE.md`](CLAUDE.md) for build commands, the pinned
+data model, and the gotchas found during implementation.
 
-The platform code in this repository (frontend, backend, build/export
-tooling) is licensed under the **GNU Affero General Public License v3.0
-(AGPL-3.0)** — see the license terms at
-<https://www.gnu.org/licenses/agpl-3.0.html>. This project builds on and
-links `stellarium-web-engine`, which is itself AGPL-3.0.
+## Quickstart
 
-The AGPL's network-use clause applies to this platform: **anyone who
-interacts with this application over a network is entitled to the
-corresponding source code**, including any modifications running on the
-service. The source for this project is available at the repository this
-README ships in; if you deploy a modified version, you must make your
-modified source available to your users as well.
-
-Culture content (constellation data, names, stories) pulled from
-`stellarium-skycultures` or contributed by community members is licensed
-**separately from the platform code** — see the governance and licensing
-notes in `docs/DESIGN.md` and (once written) `docs/GOVERNANCE.md`. Do not
-assume AGPL terms apply to culture content.
-
-## Building the engine
-
-The engine has no prebuilt npm/WASM artifact — it must be compiled locally
-from C source with [Emscripten](https://emscripten.org/) and
-[SCons](https://scons.org/):
+Requires Node ≥ 20, Python ≥ 3.11, and — for the one-time engine build —
+`emcc` (Emscripten) and `scons` on `PATH` (`brew install emscripten scons`).
 
 ```sh
+# 1. Build the engine to WebAssembly (one time, ~minutes)
 ./scripts/build_engine.sh
+
+# 2. Fetch sky cultures from upstream (one time, network)
+python3 scripts/fetch_skycultures.py --dest web/public/skycultures \
+    maori hawaiian_starlines tongan anutan tukano tupi lokono \
+    northern_andes aztec inuit navajo blackfoot kamilaroi boorong western
+
+# 3. Frontend
+cd web && npm install && npm run dev
+
+# 4. Backend (optional — without it, drafts stay in your browser)
+python3 -m venv backend/.venv
+./backend/.venv/bin/pip install -r backend/requirements.txt
+./backend/.venv/bin/uvicorn backend.app:app --reload --port 8000
 ```
 
-This clones `stellarium-web-engine` into `vendor/` (git-ignored), builds it
-with `make js`, and stages the resulting `stellarium-web-engine.js` /
-`.wasm` plus the bundled `apps/test-skydata/` star catalog into
-`build-artifacts/` at the repo root (git-ignored). See the comment at the
-top of the script for why a staging directory is used instead of writing
-directly into `web/public/` — the `web/` app itself is scaffolded in a
-later task, after this build step exists.
+Tests:
 
-Requires `emcc` (Emscripten) and `scons` on `PATH`; install with
-`brew install emscripten scons` if missing.
+```sh
+cd web && npx vitest run                                  # 68
+./backend/.venv/bin/python -m pytest tests/ backend/ -q   # 42
+```
 
-## Status
+Every generated artifact — the engine build, the fetched cultures, the
+database, the virtualenv — is git-ignored and regenerated by the commands
+above.
 
-Phase 1 (viewer + authoring demo) is in progress. See `docs/DESIGN.md` for
-the full roadmap.
+## Deploying
+
+```sh
+./deploy/pages.sh          # build the static bundle into deploy/.pages/
+./deploy/publish_pages.sh  # push it to the gh-pages branch
+```
+
+`pages.sh` regenerates attribution from each culture's own `description.md`,
+filters the culture taxonomy so no entry points at data the deploy does not
+ship, applies the per-culture licence exclusions, and verifies the **built
+artifact** rather than the intent — a missing AGPL source link, a dangling
+taxonomy reference, or an excluded culture in the output fails the build.
+Building and publishing are separate commands on purpose: one is repeatable
+and local, the other puts cultural content on the public internet.
+
+`deploy/` also holds a Docker-based deployment for hosts that can run the
+backend. Both deploy paths read the same exclusion manifest
+(`deploy/exclusions.json`) so they cannot drift apart on a licence question.
+
+Any deployment must carry: the licence exclusions, the generated attribution
+panel, a visible link to this source (an AGPL obligation, not a courtesy), and
+the demo-sandbox notice.
+
+## Attribution
+
+Constellation and star-name data is pulled verbatim from
+[stellarium-skycultures](https://github.com/Stellarium/stellarium-skycultures).
+This project does not invent, translate, or edit any culture's content.
+
+**Each culture's own authors and licence are shown in-app**, extracted
+verbatim from that culture's `description.md` by
+`deploy/generate_attribution.py` rather than hand-written for the deployment
+— because hand-maintained attribution drifts, and getting someone's name or
+licence wrong is a specific, avoidable harm.
+
+The rendering engine is `stellarium-web-engine` by the Stellarium project and
+Noctua Software. The bundled demo star catalogue ships with that engine.
+
+Two cultures available upstream — **Kamilaroi** and **Lokono** — are
+deliberately **excluded from every public deployment**. Each licence grants
+redistribution permission to a specifically named party (the Stellarium
+developers; Stellarium Labs), and this project is neither. See
+[`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#licensing-code-and-content-are-separate).
+
+## Licence
+
+**Platform code** — frontend, backend, build and export tooling — is licensed
+**GNU Affero General Public License v3.0 (AGPL-3.0)**, inherited from
+`stellarium-web-engine`. Full terms:
+<https://www.gnu.org/licenses/agpl-3.0.html>.
+
+The AGPL's network-use clause applies: **anyone who interacts with a deployed
+instance over a network is entitled to the complete corresponding source
+code**, including modifications. Every deployment of this project must show a
+link to its source. If you deploy a modified version, you must make your
+modified source available to your users.
+
+**Culture content is licensed separately from the platform code**, per
+culture, by whoever holds the right to license it. Do not assume AGPL terms
+apply to it. Drafts exported from this app carry "licensing to be determined
+by the contributing community" — the project asserts nothing on a community's
+behalf.
+
+## Contributing
+
+Corrections, objections, and requests for removal take precedence over
+feature work. If something here misrepresents your community's knowledge or
+claims a right that isn't ours, open an issue and it will be changed.
