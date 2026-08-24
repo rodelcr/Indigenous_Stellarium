@@ -181,6 +181,32 @@ class TestBundledSkycultureAllowlist:
         data = json.loads((REPO_ROOT / "deploy" / "exclusions.json").read_text())
         assert "belarusian" not in data["bundled_skycultures_allowed"]
 
+    def test_both_deploy_paths_filter_the_taxonomy(self):
+        """Excluding a culture's directory is only half the job: a tree node
+        still carrying its skyculture_id renders as a clickable culture that
+        404s and shows nothing. assemble.sh bare-copied the taxonomy while
+        pages.sh filtered it, so the container deploy really did offer
+        kamilaroi and lokono as dead entries."""
+        for script in ("pages.sh", "assemble.sh"):
+            text = (REPO_ROOT / "deploy" / script).read_text()
+            assert "filter_taxonomy.py" in text, (
+                f"deploy/{script} ships a taxonomy without filtering it"
+            )
+
+    def test_no_deploy_path_reads_the_generated_taxonomy_copy(self):
+        """web/public/taxonomy.json is a generated copy that drifts from the
+        hand-authored data/taxonomy.json -- they were out of sync when this
+        was found, the copy missing the yana_phuyu node."""
+        for script in ("pages.sh", "assemble.sh"):
+            text = (REPO_ROOT / "deploy" / script).read_text()
+            # Only a READ of the repo copy is a problem. Writing to
+            # "$OUT/web/public/taxonomy.json" is fine -- the payload
+            # deliberately mirrors the repo layout.
+            assert "$REPO_ROOT/web/public/taxonomy.json" not in text, (
+                f"deploy/{script} reads the generated taxonomy copy, which "
+                "drifts from the hand-authored data/taxonomy.json"
+            )
+
     def test_both_deploy_paths_prune_bundled_cultures(self):
         """A guard applied to one deploy path and not the other would look
         fine while still publishing the content from the other."""

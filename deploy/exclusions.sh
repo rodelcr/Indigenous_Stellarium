@@ -72,6 +72,22 @@ while IFS= read -r _line; do
   [[ -n "$_line" ]] && BUNDLED_SKYCULTURES_ALLOWED+=("$_line")
 done < <(_read_bundled_allowed)
 
+# An empty allowlist is far more dangerous than an empty denylist, and it is
+# reachable: a SystemExit inside `< <(...)` process substitution does NOT
+# trip `set -e`, so a renamed or removed manifest key just leaves the array
+# empty. prune_bundled_skycultures would then judge EVERY bundled culture
+# disallowed and delete them all -- including `western`, the one culture
+# engine.js boots -- after which its own post-prune check and pages.sh's
+# stray-culture check both pass vacuously, because there is nothing left to
+# find. The build would report success and publish a viewer whose default
+# sky culture 404s.
+if [[ "${#BUNDLED_SKYCULTURES_ALLOWED[@]}" -eq 0 ]]; then
+  echo "exclusions.sh: ERROR: parsed an empty bundled-culture allowlist from" \
+       "$_EXCLUSIONS_JSON — refusing to proceed (this would delete every" \
+       "bundled sky culture, including the one the app boots)." >&2
+  exit 1
+fi
+
 if [[ "${#EXCLUDE_CULTURES[@]}" -eq 0 ]]; then
   echo "exclusions.sh: ERROR: parsed an empty exclusion list from" \
        "$_EXCLUSIONS_JSON — refusing to proceed." >&2
@@ -88,6 +104,15 @@ fi
 assert_no_excluded_cultures() {
   local dir="$1"
   local ex found=0
+
+  # A guard handed a path that does not exist finds nothing and would
+  # "pass". This is the last line of defence in three scripts, so a typo, a
+  # relative-path mismatch, or a future layout rename must fail loudly
+  # rather than silently certify a directory nobody looked at.
+  if [[ ! -d "$dir" ]]; then
+    echo "ERROR: cannot verify exclusions — '$dir' does not exist." >&2
+    return 1
+  fi
   for ex in "${EXCLUDE_CULTURES[@]}"; do
     if [[ -e "$dir/$ex" ]]; then
       echo "ERROR: excluded culture '$ex' is present at $dir/$ex" >&2
@@ -113,7 +138,12 @@ assert_no_excluded_cultures() {
 prune_bundled_skycultures() {
   local skydata_dir="$1"
   local sc_dir="$skydata_dir/skycultures"
-  [[ -d "$sc_dir" ]] || return 0
+  # Same reasoning as assert_no_excluded_cultures: a missing directory means
+  # this guard inspected nothing, which is a failure, not a pass.
+  if [[ ! -d "$sc_dir" ]]; then
+    echo "ERROR: cannot prune bundled cultures — '$sc_dir' does not exist." >&2
+    return 1
+  fi
 
   local dir name allowed a
   for dir in "$sc_dir"/*/; do

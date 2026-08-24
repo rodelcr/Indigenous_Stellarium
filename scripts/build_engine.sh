@@ -71,12 +71,28 @@ if [ "${ACTUAL_COMMIT}" != "${ENGINE_COMMIT}" ]; then
   echo "    checking out pinned commit ${ENGINE_COMMIT:0:12}"
   git -C "${VENDOR_DIR}" fetch --quiet origin "${ENGINE_COMMIT}" 2>/dev/null || \
     git -C "${VENDOR_DIR}" fetch --quiet origin
-  git -C "${VENDOR_DIR}" checkout --quiet "${ENGINE_COMMIT}" || {
-    echo "ERROR: pinned engine commit ${ENGINE_COMMIT} not found upstream." >&2
-    echo "       If upstream rewrote history, update ENGINE_COMMIT in this" >&2
-    echo "       script deliberately and re-verify the three patches apply." >&2
+  # Distinguish the two failure modes. The likely one on an existing machine
+  # is NOT a missing object: vendor/ is git-ignored and every prior run left
+  # it dirty (the three patches modify SConstruct, src/modules/stars.c and
+  # apps/simple-html/... without committing), so git refuses with "local
+  # changes would be overwritten". Reporting that as "upstream rewrote
+  # history" would send someone to bump ENGINE_COMMIT — moving the pin off
+  # the reviewed SHA, which is the one thing this pin exists to prevent.
+  if ! git -C "${VENDOR_DIR}" checkout --quiet "${ENGINE_COMMIT}" 2>/dev/null; then
+    if ! git -C "${VENDOR_DIR}" cat-file -e "${ENGINE_COMMIT}^{commit}" 2>/dev/null; then
+      echo "ERROR: pinned engine commit ${ENGINE_COMMIT} not found upstream." >&2
+      echo "       If upstream rewrote history, update ENGINE_COMMIT in this" >&2
+      echo "       script DELIBERATELY and re-verify all three patches apply" >&2
+      echo "       to a fresh clone (git apply --check) before trusting it." >&2
+    else
+      echo "ERROR: the commit exists but checkout was refused — vendor/ has" >&2
+      echo "       uncommitted changes, almost certainly this script's own" >&2
+      echo "       patches from a previous run." >&2
+      echo "       Do NOT change ENGINE_COMMIT. Re-clone instead:" >&2
+      echo "         rm -rf ${VENDOR_DIR} && $0" >&2
+    fi
     exit 1
-  }
+  fi
 fi
 echo "    engine at $(git -C "${VENDOR_DIR}" rev-parse --short HEAD) (pinned)"
 

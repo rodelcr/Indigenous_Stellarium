@@ -138,3 +138,65 @@ describe('draftFilename', () => {
     expect(draftFilename(makeDraft({ name_english: '' }))).toBe('rapa_nui.json');
   });
 });
+
+describe('static deploys must not transmit the draft', () => {
+  // The attribution panel tells visitors on the static build that their
+  // drafts are "never transmitted anywhere -- not to us, not to anyone".
+  // Runtime backend detection made that false: saveDraft POSTed the full
+  // draft and only fell back after reading a 404, so contributor name,
+  // community, source, permission statement and geometry all reached the
+  // static host's edge first. These pin the claim, not just the behaviour.
+  const draft = {
+    culture_key: 'rapa_nui',
+    name_english: 'Test',
+    lines: [[1, 2]],
+    provenance: {
+      contributor: 'A Contributor',
+      community: 'A Community',
+      source: 'An Elder',
+      permission: 'granted for demo',
+    },
+  }
+
+  beforeEach(() => localStorage.clear())
+
+  it('saveDraft makes NO network call at all when static', async () => {
+    let called = 0
+    const fetchImpl = () => {
+      called += 1
+      throw new Error('fetch must not be called on a static deploy')
+    }
+    const res = await saveDraft(draft, { fetchImpl, staticDeploy: true })
+    expect(called).toBe(0)
+    expect(res.mode).toBe('local')
+  })
+
+  it('listDrafts makes NO network call at all when static', async () => {
+    let called = 0
+    const fetchImpl = () => {
+      called += 1
+      throw new Error('fetch must not be called on a static deploy')
+    }
+    const res = await listDrafts({ fetchImpl, staticDeploy: true })
+    expect(called).toBe(0)
+    expect(res.mode).toBe('local')
+  })
+
+  it('still probes the backend when NOT static', async () => {
+    let called = 0
+    const fetchImpl = async () => {
+      called += 1
+      return { ok: true, status: 201, json: async () => ({ id: 7 }) }
+    }
+    const res = await saveDraft(draft, { fetchImpl, staticDeploy: false })
+    expect(called).toBe(1)
+    expect(res).toEqual({ mode: 'server', id: 7 })
+  })
+
+  it('a static save still enforces provenance rather than skipping it', async () => {
+    const bad = { ...draft, provenance: { ...draft.provenance, community: '   ' } }
+    await expect(
+      saveDraft(bad, { fetchImpl: () => { throw new Error('no fetch') }, staticDeploy: true })
+    ).rejects.toThrow(/community/i)
+  })
+})

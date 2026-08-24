@@ -17,3 +17,4 @@ web/public/attribution.json
 
 deploy/.pages/
 deploy/.pages-public/
+deploy/.pages-worktree/

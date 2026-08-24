@@ -13,6 +13,21 @@
 // would be accepting submissions nobody is looking after. Keeping drafts in
 // the visitor's own browser means nothing they author leaves their machine.
 //
+// THAT LAST SENTENCE USED TO BE FALSE, and the UI repeated it to visitors.
+// Runtime detection works by POSTing the draft and treating a 404 as "no
+// backend" — which means the complete draft (contributor name, community,
+// source, permission statement, authored geometry) was transmitted to the
+// static host BEFORE we learned there was nothing there to receive it, where
+// the CDN edge terminates the request and can log it. Meanwhile the
+// attribution panel told the visitor their drafts were "never transmitted
+// anywhere — not to us, not to anyone."
+//
+// A static build therefore short-circuits to local storage WITHOUT any
+// network call. The deploy kind is known at build time (deploy/pages.sh sets
+// VITE_DEPLOY_KIND=static), so probing for a backend that cannot exist buys
+// nothing and costs the exact guarantee the UI is making. Runtime detection
+// stays for every other deploy, where a backend may or may not be mounted.
+//
 // IMPORTANT — a rejection is not a fallback trigger. If the server is
 // reachable and *refuses* a draft (e.g. 422 for missing provenance), that
 // refusal stands and is surfaced to the contributor. Falling back to local
@@ -23,6 +38,11 @@
 import { assetUrl } from './assetUrl.js';
 
 const STORAGE_KEY = 'indigenous-stellarium.drafts.v1';
+
+/** True when this bundle was built for a deployment with no backend at all.
+ *  Set by deploy/pages.sh; see the module header for why this must gate the
+ *  network call rather than merely describe it. */
+export const IS_STATIC_DEPLOY = import.meta.env.VITE_DEPLOY_KIND === 'static';
 
 /** Fields that must be present and non-blank on every draft. Mirrors the
  *  backend's Provenance model (app.py) so the local path enforces the same
@@ -78,7 +98,13 @@ function writeLocal(list) {
  * @throws {Error} if the server rejected the draft, or if local validation
  *   failed — callers should surface the message to the contributor.
  */
-export async function saveDraft(draft, { fetchImpl = globalThis.fetch } = {}) {
+export async function saveDraft(
+  draft,
+  { fetchImpl = globalThis.fetch, staticDeploy = IS_STATIC_DEPLOY } = {}
+) {
+  // No backend can exist here, so do not transmit the draft to find that out.
+  if (staticDeploy) return saveLocal(draft);
+
   let res;
   try {
     res = await fetchImpl(assetUrl('/api/drafts'), {
@@ -123,7 +149,11 @@ function saveLocal(draft) {
  *
  * @returns {Promise<{mode: 'server'|'local', drafts: object[]}>}
  */
-export async function listDrafts({ fetchImpl = globalThis.fetch } = {}) {
+export async function listDrafts(
+  { fetchImpl = globalThis.fetch, staticDeploy = IS_STATIC_DEPLOY } = {}
+) {
+  if (staticDeploy) return { mode: 'local', drafts: readLocal() };
+
   try {
     const res = await fetchImpl(assetUrl('/api/drafts'));
     if (res.status === 404 || !res.ok) return { mode: 'local', drafts: readLocal() };

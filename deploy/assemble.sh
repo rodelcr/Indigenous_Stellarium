@@ -25,7 +25,11 @@ source "$SCRIPT_DIR/exclusions.sh"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT="${1:-$SCRIPT_DIR/.payload}"
 
-for required in web/public/engine web/public/skydata web/public/skycultures web/public/taxonomy.json; do
+# data/taxonomy.json, not web/public/taxonomy.json: the latter is a generated
+# copy and the two drift. They were out of sync when this was found — the
+# generated copy was missing the yana_phuyu node — so this path was silently
+# shipping a payload with a culture absent from its tree.
+for required in web/public/engine web/public/skydata web/public/skycultures data/taxonomy.json; do
   if [[ ! -e "$REPO_ROOT/$required" ]]; then
     echo "assemble.sh: ERROR: $required not found — run scripts/build_engine.sh" \
          "and scripts/fetch_skycultures.py first (see README.md)." >&2
@@ -64,7 +68,13 @@ cp -R "$REPO_ROOT/web/public/skydata" "$OUT/web/public/skydata"
 # Same hole as the static path had: the engine's demo data carries sky
 # cultures of its own, copied wholesale above. See deploy/exclusions.json.
 prune_bundled_skycultures "$OUT/web/public/skydata"
-cp "$REPO_ROOT/web/public/taxonomy.json" "$OUT/web/public/taxonomy.json"
+# Excluding a culture's DIRECTORY is only half the job: a tree node still
+# carrying its skyculture_id renders as a clickable culture that 404s and
+# silently shows nothing. This path used to bare-copy the taxonomy while
+# pages.sh filtered it, so the two deploys really did disagree on a licence
+# question — exactly the drift exclusions.json was meant to prevent.
+python3 "$SCRIPT_DIR/filter_taxonomy.py" \
+  "$REPO_ROOT/data/taxonomy.json" "$OUT/web/public/taxonomy.json"
 
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   name="$(basename "$dir")"
@@ -81,17 +91,28 @@ done
 
 # --- verification: fail loudly if any excluded culture slipped in ---
 assert_no_excluded_cultures "$OUT/web/public/skycultures"
-if grep -rlq -e "kamilaroi" -e "lokono" -e "rapa_nui" "$OUT/web/public/taxonomy.json" 2>/dev/null; then
-  # taxonomy.json listing rapa_nui as a skyculture_id:null PLACEHOLDER (no
-  # actual culture directory, just an invitation-to-contribute entry) is
-  # expected and fine — only a real skyculture_id pointing at an excluded
-  # culture, or the literal directory, would be a problem. Directory
-  # absence is already checked above; this just surfaces the mention for
-  # a human to glance at.
-  echo "assemble.sh: note: taxonomy.json mentions an excluded-culture id" \
-       "(expected for rapa_nui, which is a placeholder entry with" \
-       "skyculture_id: null) — verify no OTHER excluded id is wired in."
-fi
+# Verify the FILTERED taxonomy no longer offers any withheld culture. Built
+# from the manifest rather than hardcoded ids — the previous version listed
+# the three cultures literally, so adding a fourth to exclusions.json would
+# have left this checking the old three, which is the drift the manifest
+# exists to prevent.
+python3 - "$OUT/web/public/taxonomy.json" "${EXCLUDE_CULTURES[@]}" <<'PYCHECK'
+import json, sys
+taxonomy = json.loads(open(sys.argv[1], encoding="utf-8").read())
+excluded = set(sys.argv[2:])
+leaked = [
+    c.get("id")
+    for b in taxonomy
+    for c in (b.get("children") or [])
+    if c.get("skyculture_id") in excluded
+]
+if leaked:
+    raise SystemExit(
+        f"assemble.sh: ERROR: payload taxonomy still offers withheld "
+        f"cultures {leaked} — refusing to proceed."
+    )
+print("assemble.sh: taxonomy verified — no node points at a withheld culture")
+PYCHECK
 
 echo "assemble.sh: payload assembled at $OUT"
 echo "assemble.sh: shipped cultures ($(ls "$OUT/web/public/skycultures" | wc -l | tr -d ' ')):"
