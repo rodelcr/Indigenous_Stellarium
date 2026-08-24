@@ -46,8 +46,14 @@ worse outcome than shipping nothing.
 5. **Redistribution rights are checked per culture.** `kamilaroi` and `lokono`
    are excluded from every public deploy — both licences name a *specific*
    permitted redistributor (Stellarium developers; Stellarium Labs) who is not
-   us. The exclusion lives in `deploy/exclusions.sh` and is enforced with a
-   post-copy assertion, not just a filter.
+   us. The manifest is `deploy/exclusions.json`, enforced with a post-copy
+   assertion, not just a filter.
+   **There are TWO sources of cultural content.** `web/public/skycultures/` is
+   the fetched set; `web/public/skydata/` is the *engine's own demo data* and
+   ships sky cultures too. Both deploy paths copy skydata wholesale, so it gets
+   an allowlist (`bundled_skycultures_allowed`) naming only what `engine.js`
+   actually boots. A `belarusian` culture shipped live through this gap —
+   unattributed, and licensed upstream as "Text and data: TODO".
 6. **Catalogue numbers are storage, never interface.** HIP ids must stay
    internally — Stellarium's constellation `lines` *are* HIP arrays, and
    dropping them forfeits export and upstreaming. But no contributor should
@@ -168,6 +174,18 @@ empirically: select Arcturus, check `designations()`.
 404. A naive `res.ok` check reported every placeholder culture as having an
 exported draft. `web/src/draftAvailability.js` exists to keep that bug from
 coming back — it requires a parsed JSON body with a string `id`.
+
+**Verify the artifact, never the intent.** This bit twice in one session.
+`pages.sh` checks the built bundle; `publish_pages.sh` did not check the
+remote, and reported a successful publish while the stale bundle stayed live
+(its `git checkout --orphan gh-pages` failed on every run after the first,
+with stderr swallowed). Both now verify what actually landed.
+
+**The engine clone is pinned** (`ENGINE_COMMIT` in `build_engine.sh`). The
+patches match on context lines, so an unpinned clone is a reproducibility
+hazard. Note the engine *core* is dormant since Dec 2021 but the *repository*
+is not — the pinned SHA is dated 2026-08-11. To move the pin: update the SHA,
+clone fresh, confirm all three patches `git apply --check` clean.
 
 **A 4xx rejection must not fall back to localStorage.** `draftStore.js` falls
 back on an *unreachable* backend (network error or 404), never on a 422 —
