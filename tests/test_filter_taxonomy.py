@@ -7,6 +7,7 @@ recorded knowledge. Both are governance failures, not cosmetic bugs, so
 each rule below is pinned individually.
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -141,3 +142,50 @@ def test_real_manifest_and_real_taxonomy_agree():
     # live skyculture_ids; if that stops being true this test should be
     # updated deliberately, not silently pass.
     assert marked == {"kamilaroi", "lokono"}
+
+
+class TestBundledSkycultureAllowlist:
+    """The engine's own demo data (web/public/skydata/) ships sky cultures,
+    and both deploy paths copy that directory wholesale. The exclusion list
+    only ever guarded the FETCHED set, so a culture riding along in skydata
+    was published unexamined and — because the attribution panel is built
+    from the fetched set — with no author or licence shown.
+
+    The `belarusian` culture was in exactly that state on the live site. Its
+    own description.md says 'Text and data: TODO', so upstream has not
+    determined a licence for it; republishing it asserted one on its authors'
+    behalf, which is the single thing this project must never do.
+    """
+
+    def test_manifest_declares_an_allowlist(self):
+        data = json.loads((REPO_ROOT / "deploy" / "exclusions.json").read_text())
+        allowed = data.get("bundled_skycultures_allowed")
+        assert allowed, "exclusions.json must declare bundled_skycultures_allowed"
+        assert isinstance(allowed, list)
+
+    def test_allowlist_matches_what_the_app_actually_boots(self):
+        """An allowlist wider than the set engine.js loads would republish a
+        culture nothing can display and nothing credits."""
+        data = json.loads((REPO_ROOT / "deploy" / "exclusions.json").read_text())
+        allowed = set(data["bundled_skycultures_allowed"])
+        engine_js = (REPO_ROOT / "web" / "src" / "engine.js").read_text()
+        booted = set(re.findall(r"skycultures/(\w+)', key: '(?:\w+)'", engine_js))
+        assert allowed == booted, (
+            f"allowlist {sorted(allowed)} does not match the cultures engine.js "
+            f"boots {sorted(booted)} — one of the two changed without the other"
+        )
+
+    def test_belarusian_is_not_allowlisted(self):
+        """Regression pin for the specific culture that shipped unattributed
+        with an undetermined upstream licence."""
+        data = json.loads((REPO_ROOT / "deploy" / "exclusions.json").read_text())
+        assert "belarusian" not in data["bundled_skycultures_allowed"]
+
+    def test_both_deploy_paths_prune_bundled_cultures(self):
+        """A guard applied to one deploy path and not the other would look
+        fine while still publishing the content from the other."""
+        for script in ("pages.sh", "assemble.sh"):
+            text = (REPO_ROOT / "deploy" / script).read_text()
+            assert "prune_bundled_skycultures" in text, (
+                f"deploy/{script} copies skydata but never prunes it"
+            )

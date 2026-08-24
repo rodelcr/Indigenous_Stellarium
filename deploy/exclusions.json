@@ -11,7 +11,18 @@
     "",
     "'reason' is rendered in the deployed UI, so it must be accurate and",
     "must not imply the community has no sky knowledge recorded. It has;",
-    "we are the ones without permission to redistribute it."
+    "we are the ones without permission to redistribute it.",
+    "",
+    "'bundled_skycultures_allowed' covers a SECOND, easily-missed source of",
+    "cultural content: the engine's own demo data (web/public/skydata/) ships",
+    "sky cultures of its own, and both deploy paths copy that directory",
+    "wholesale. The 'cultures' list above only ever guarded the FETCHED set in",
+    "web/public/skycultures/, so anything riding along inside skydata was",
+    "published unexamined and unattributed.",
+    "",
+    "This is an ALLOWLIST, not a denylist, on purpose: it names what the app",
+    "actually loads, so a future skydata refresh that adds a culture fails the",
+    "build instead of silently publishing it."
   ],
   "cultures": [
     {
@@ -33,5 +44,9 @@
       "kind": "demo-artifact",
       "reason": "This project's own throwaway demo export from testing the authoring round-trip. Not real cultural content, and must never be published as though it were."
     }
-  ]
+  ],
+  "bundled_skycultures_allowed": [
+    "western"
+  ],
+  "_bundled_note": "Only 'western' is allowed because engine.js boots exactly one bundled culture (core.skycultures.addDataSource with key 'western'). Anything else in skydata/skycultures/ is unreachable in the UI, absent from the attribution panel, and therefore published with no credit shown. The 'belarusian' culture was in exactly that state and its own description.md states 'Text and data: TODO' -- upstream has not determined a licence for it, so we certainly cannot assert one by republishing it."
 }

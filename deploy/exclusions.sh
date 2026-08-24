@@ -12,8 +12,18 @@
 # fine. Read exclusions.json for which cultures, and why.
 #
 # Exports:
-#   EXCLUDE_CULTURES        array of culture ids to omit
-#   assert_no_excluded_cultures <dir>   post-copy verification
+#   EXCLUDE_CULTURES               array of culture ids to omit
+#   BUNDLED_SKYCULTURES_ALLOWED    array of ids allowed inside skydata/
+#   assert_no_excluded_cultures <dir>       post-copy verification
+#   prune_bundled_skycultures <skydata_dir> drop unused bundled cultures
+#
+# Two separate guards, because there are two separate sources of cultural
+# content and only one of them was ever guarded:
+#   1. web/public/skycultures/       — fetched from upstream, denylisted above
+#   2. web/public/skydata/skycultures/ — the ENGINE'S OWN demo data, copied
+#      wholesale by both deploy paths. Allowlisted, so a future skydata
+#      refresh that adds a culture fails the build rather than publishing it
+#      unexamined and unattributed.
 
 _EXCLUSIONS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 _EXCLUSIONS_JSON="$_EXCLUSIONS_DIR/exclusions.json"
@@ -40,10 +50,27 @@ print("\n".join(ids))
 ' "$_EXCLUSIONS_JSON"
 }
 
+_read_bundled_allowed() {
+  python3 -c '
+import json, sys
+with open(sys.argv[1]) as fh:
+    data = json.load(fh)
+ids = data.get("bundled_skycultures_allowed")
+if not ids:
+    raise SystemExit("exclusions.json has no bundled_skycultures_allowed")
+print("\n".join(ids))
+' "$_EXCLUSIONS_JSON"
+}
+
 EXCLUDE_CULTURES=()
 while IFS= read -r _line; do
   [[ -n "$_line" ]] && EXCLUDE_CULTURES+=("$_line")
 done < <(_read_exclusions)
+
+BUNDLED_SKYCULTURES_ALLOWED=()
+while IFS= read -r _line; do
+  [[ -n "$_line" ]] && BUNDLED_SKYCULTURES_ALLOWED+=("$_line")
+done < <(_read_bundled_allowed)
 
 if [[ "${#EXCLUDE_CULTURES[@]}" -eq 0 ]]; then
   echo "exclusions.sh: ERROR: parsed an empty exclusion list from" \
@@ -71,5 +98,50 @@ assert_no_excluded_cultures() {
     echo "ERROR: refusing to publish — see deploy/exclusions.json." >&2
     return 1
   fi
+  return 0
+}
+
+# prune_bundled_skycultures <skydata_dir>
+#
+# The engine's bundled demo data carries sky cultures of its own. Only the
+# ones the app actually loads may be published: anything else is unreachable
+# in the UI and, because the attribution panel is generated from the FETCHED
+# culture set, ships with no author or licence shown at all.
+#
+# Allowlist rather than denylist: an unrecognised culture is removed, so a
+# future skydata refresh cannot quietly reintroduce this.
+prune_bundled_skycultures() {
+  local skydata_dir="$1"
+  local sc_dir="$skydata_dir/skycultures"
+  [[ -d "$sc_dir" ]] || return 0
+
+  local dir name allowed a
+  for dir in "$sc_dir"/*/; do
+    [[ -d "$dir" ]] || continue
+    name="$(basename "$dir")"
+    allowed=false
+    for a in "${BUNDLED_SKYCULTURES_ALLOWED[@]}"; do
+      [[ "$name" == "$a" ]] && allowed=true
+    done
+    if [[ "$allowed" != true ]]; then
+      echo "  dropping unused bundled culture '$name' from skydata" \
+           "(not loaded by the app, and not covered by the attribution panel)"
+      rm -rf "$dir"
+    fi
+  done
+
+  # Verify the directory now contains only allowlisted ids.
+  for dir in "$sc_dir"/*/; do
+    [[ -d "$dir" ]] || continue
+    name="$(basename "$dir")"
+    allowed=false
+    for a in "${BUNDLED_SKYCULTURES_ALLOWED[@]}"; do
+      [[ "$name" == "$a" ]] && allowed=true
+    done
+    if [[ "$allowed" != true ]]; then
+      echo "ERROR: bundled culture '$name' survived pruning at $dir" >&2
+      return 1
+    fi
+  done
   return 0
 }

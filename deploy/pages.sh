@@ -68,6 +68,9 @@ mkdir -p "$STAGE_PUBLIC/skycultures"
 [[ -f "$REPO_ROOT/web/public/favicon.svg" ]] && cp "$REPO_ROOT/web/public/favicon.svg" "$STAGE_PUBLIC/"
 cp -R "$REPO_ROOT/web/public/engine" "$STAGE_PUBLIC/engine"
 cp -R "$REPO_ROOT/web/public/skydata" "$STAGE_PUBLIC/skydata"
+# The engine's demo data carries sky cultures of its own; publish only the
+# one the app boots. See deploy/exclusions.json.
+prune_bundled_skycultures "$STAGE_PUBLIC/skydata"
 
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   name="$(basename "$dir")"
@@ -139,6 +142,18 @@ assert source_url in bundle, (
     f"the AGPL source link {source_url!r} is not present in the built "
     "bundle — publishing without it would not satisfy AGPL-3.0 section 13"
 )
+
+# Every sky culture reaching the public must be one the attribution panel
+# covers. The panel is generated from skycultures/ only, so a culture riding
+# along inside skydata/ would ship with no author or licence shown.
+bundled_dir = out / "skydata" / "skycultures"
+if bundled_dir.is_dir():
+    bundled = {p.name for p in bundled_dir.iterdir() if p.is_dir()}
+    stray = bundled - shipped
+    assert not stray, (
+        f"skydata ships sky cultures the attribution panel does not cover: "
+        f"{sorted(stray)} — they would be published with no credit shown"
+    )
 
 attribution = json.loads((out / "attribution.json").read_text(encoding="utf-8"))
 attributed = {r["id"] for r in attribution}

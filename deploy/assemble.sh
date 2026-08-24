@@ -61,6 +61,9 @@ mkdir -p "$OUT/web/public/skycultures"
 [[ -f "$REPO_ROOT/web/public/favicon.svg" ]] && cp "$REPO_ROOT/web/public/favicon.svg" "$OUT/web/public/"
 cp -R "$REPO_ROOT/web/public/engine" "$OUT/web/public/engine"
 cp -R "$REPO_ROOT/web/public/skydata" "$OUT/web/public/skydata"
+# Same hole as the static path had: the engine's demo data carries sky
+# cultures of its own, copied wholesale above. See deploy/exclusions.json.
+prune_bundled_skycultures "$OUT/web/public/skydata"
 cp "$REPO_ROOT/web/public/taxonomy.json" "$OUT/web/public/taxonomy.json"
 
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
