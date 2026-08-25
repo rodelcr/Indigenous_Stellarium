@@ -110,6 +110,60 @@ export function onStarSelected(cb) {
 }
 
 /**
+ * Subscribe to ANY selection change — star, planet, nebula, galaxy,
+ * constellation, or nothing.
+ *
+ * onStarSelected() deliberately fires only for HIP-bearing stars, which was
+ * right for the authoring tool (it needs a HIP to record) but leaves every
+ * other object with no way to show what it is. This is the general path: it
+ * fires with a payload for any selected object, and with null when the
+ * selection is cleared.
+ *
+ * Every field is read defensively. The engine returns undefined for info it
+ * does not have for a given object type, and `distance` is genuinely NaN for
+ * stars without parallax (stars.c:128) — callers must be able to tell "not
+ * known" from zero, so nothing is coerced to a number here.
+ *
+ * @param {(payload: null | {
+ *   obj: object, designations: string[], culturalNames: Array<object>,
+ *   type: string|null, vmag: number|undefined, distance: number|undefined,
+ *   radius: number|undefined, phase: number|undefined
+ * }) => void} cb
+ * @returns {() => void} unsubscribe
+ */
+export function onObjectSelected(cb) {
+  return subscribeToSelectionChanges((stel, path) => {
+    if (path !== 'selection') return;
+
+    const obj = stel.core.selection;
+    if (!obj) {
+      cb(null);
+      return;
+    }
+
+    const safe = (fn, fallback = undefined) => {
+      try {
+        return fn();
+      } catch (err) {
+        // A missing info key must cost one field, not the whole panel.
+        return fallback;
+      }
+    };
+
+    cb({
+      obj,
+      designations: safe(() => obj.designations(), []) || [],
+      culturalNames: safe(() => obj.culturalDesignations(), []) || [],
+      type: safe(() => obj.type, null),
+      vmag: safe(() => obj.getInfo('vmag')),
+      distance: safe(() => obj.getInfo('distance')),
+      radius: safe(() => obj.getInfo('radius')),
+      phase: safe(() => obj.getInfo('phase')),
+    });
+  });
+}
+
+/**
  * Subscribe to engine selection changes that clear or move away from a
  * HIP-bearing star: empty sky, a planet, a DSO, or any other selection
  * that does not resolve to a HIP number. `cb` is called with no

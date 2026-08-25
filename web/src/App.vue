@@ -6,7 +6,7 @@
 import { onMounted, ref } from 'vue';
 import { initEngine } from './engine.js';
 import CulturePanel from './components/CulturePanel.vue';
-import StarInfo from './components/StarInfo.vue';
+import ObjectInfo from './components/ObjectInfo.vue';
 import AuthoringPanel from './components/AuthoringPanel.vue';
 import InfoPanel from './components/InfoPanel.vue';
 import ControlBar from './components/ControlBar.vue';
@@ -52,7 +52,7 @@ onMounted(async () => {
   </div>
   <HorizonOverlay :src="horizonSrc" />
   <ControlBar @horizon-changed="horizonSrc = $event" />
-  <StarInfo />
+  <ObjectInfo />
   <InfoPanel />
 </template>
 
