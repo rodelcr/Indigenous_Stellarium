@@ -19,6 +19,7 @@ import {
 } from '../timeControls.js';
 import { createHorizonStore } from '../horizonImage.js';
 import LocationPanel from './LocationPanel.vue';
+import SkyLayersPanel from './SkyLayersPanel.vue';
 
 const emit = defineEmits(['horizon-changed']);
 
@@ -26,6 +27,7 @@ const speed = ref(REAL_TIME);
 const clock = ref('');
 const showDatePicker = ref(false);
 const showLocation = ref(false);
+const showLayers = ref(false);
 const dateValue = ref('');
 const groundVisible = ref(false);
 const atmosphereVisible = ref(false);
@@ -184,6 +186,12 @@ onUnmounted(() => {
       <button
         type="button"
         class="ctl wide"
+        :class="{ on: showLayers }"
+        @click="showLayers = !showLayers"
+      >Sky layers…</button>
+      <button
+        type="button"
+        class="ctl wide"
         :class="{ on: groundVisible }"
         :aria-pressed="groundVisible"
         @click="toggleGround"
@@ -217,6 +225,7 @@ onUnmounted(() => {
   </div>
 
   <LocationPanel :open="showLocation" @close="showLocation = false" />
+  <SkyLayersPanel :open="showLayers" @close="showLayers = false" />
 
   <p v-if="horizonError" class="horizon-error">{{ horizonError }}</p>
 </template>

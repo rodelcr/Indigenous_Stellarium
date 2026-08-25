@@ -94,6 +94,13 @@ function setInitialVisibility(stel) {
   // all-or-nothing.
   core.constellations.show_only_pointed = true;
   core.constellations.unpointed_dim = 0.35;
+
+  // The bundled TLE set is from the engine's 2021-era demo data, so every
+  // satellite is propagated from elements years out of date — the console
+  // fills with "Satellite position error" on boot and the positions drawn
+  // are wrong. Showing wrong positions is worse than showing none; the Sky
+  // layers panel can turn them back on for anyone who wants to look.
+  core.satellites.visible = false;
 }
 
 /**
