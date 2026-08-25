@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   formatMagnitude, formatDistance, formatAngularSize, formatPhase,
   chooseNames, catalogueDesignations, isCatalogueDesignation, formatType,
-  AU_PER_LY,
+  pickOtype, AU_PER_LY,
 } from './objectInfo.js'
 
 describe('formatMagnitude', () => {
@@ -156,5 +156,44 @@ describe('formatType', () => {
   it('returns null when there is no type at all', () => {
     expect(formatType('', () => 'x')).toBeNull()
     expect(formatType(null, () => 'x')).toBeNull()
+  })
+})
+
+describe('pickOtype — the shape the engine actually returns', () => {
+  // Found by a browser check, not by these tests: obj.type is undefined and
+  // the codes live in obj.jsonData.types as an array with a '?' sentinel.
+  // Sirius really does come back as ["*", "?"].
+  it('drops the unknown-nature sentinel', () => {
+    expect(pickOtype(['*', '?'])).toBe('*')
+  })
+
+  it('prefers the more specific code, which is the longer one', () => {
+    expect(pickOtype(['*', '**', '?'])).toBe('**')
+    expect(pickOtype(['*', '**', 'SB*'])).toBe('SB*')
+  })
+
+  it('accepts a bare string as well as an array', () => {
+    expect(pickOtype('G')).toBe('G')
+  })
+
+  it('returns null for nothing usable', () => {
+    for (const v of [null, undefined, [], ['?'], ['', '  ']]) expect(pickOtype(v)).toBeNull()
+  })
+})
+
+describe('formatType with real engine input', () => {
+  it('reads a type out of the array form', () => {
+    expect(formatType(['*', '?'], (c) => (c === '*' ? 'Star' : 'Object of unknown nature')))
+      .toBe('Star')
+  })
+
+  // "Object of unknown nature" is worse than showing the raw code: it reads
+  // as a claim about the object rather than about the catalogue.
+  it('does not surface the unknown-nature label', () => {
+    expect(formatType(['Zz'], () => 'Object of unknown nature')).toBe('Zz')
+  })
+
+  it('returns null when the engine gives nothing', () => {
+    expect(formatType(undefined, () => 'Star')).toBeNull()
   })
 })

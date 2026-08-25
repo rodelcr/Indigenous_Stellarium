@@ -152,7 +152,13 @@ const MULTIPLE_OTYPES = {
 };
 
 export function describeMultiplicity(otype) {
-  const code = (otype || '').trim();
+  // Accepts the engine's ARRAY of otype codes (obj.jsonData.types) or a
+  // single code. See objectInfo.pickOtype for why it is an array.
+  const list = Array.isArray(otype) ? otype : otype ? [otype] : [];
+  const codes = list.map((c) => String(c).trim()).filter((c) => c && c !== '?');
+  const code = codes.find((c) => MULTIPLE_OTYPES[c])
+    || codes.find((c) => c.endsWith('?') && MULTIPLE_OTYPES[c.slice(0, -1)])
+    || '';
   if (!code) return null;
   if (MULTIPLE_OTYPES[code]) return { multiple: true, label: MULTIPLE_OTYPES[code] };
   // A trailing '?' marks a candidate in SIMBAD's scheme; report the doubt.

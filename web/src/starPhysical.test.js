@@ -186,3 +186,17 @@ describe('formatDsoDimensions', () => {
     expect(formatDsoDimensions(0, 0)).toBeNull()
   })
 })
+
+describe('describeMultiplicity with the engine array form', () => {
+  it('finds a binary code inside the array', () => {
+    expect(describeMultiplicity(['*', '**', '?']).multiple).toBe(true)
+    expect(describeMultiplicity(['*', 'SB*']).label).toMatch(/Spectroscopic/)
+  })
+
+  // The bundled demo catalogue types every star as plain '*' -- even Mizar,
+  // which is a famous double. So this returns null a lot, and that is the
+  // catalogue being silent rather than the star being single.
+  it('returns null for the generic star type the demo catalogue uses', () => {
+    expect(describeMultiplicity(['*', '?'])).toBeNull()
+  })
+})

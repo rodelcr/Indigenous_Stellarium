@@ -120,11 +120,34 @@ export function catalogueDesignations(designations) {
 }
 
 /**
+ * Pick the most informative otype from the engine's list.
+ *
+ * The engine does NOT expose a single `obj.type` for catalogue objects —
+ * that property is undefined. The codes live in `obj.jsonData.types`, an
+ * array, and it is generic-to-specific with a '?' sentinel: Sirius comes
+ * back as ["*", "?"], i.e. "Star" and "Object of unknown nature". Reading
+ * obj.type instead showed no type at all on every object, which is the bug
+ * a browser check found and the unit tests could not.
+ *
+ * '?' is dropped, and the longest remaining code wins because SIMBAD's
+ * scheme nests by extension: '*' star, '**' double, 'SB*' spectroscopic
+ * binary.
+ */
+export function pickOtype(types) {
+  const list = Array.isArray(types) ? types : types ? [types] : [];
+  const useful = list
+    .map((c) => String(c).trim())
+    .filter((c) => c && c !== '?');
+  if (!useful.length) return null;
+  return useful.reduce((best, c) => (c.length > best.length ? c : best), useful[0]);
+}
+
+/**
  * Readable object type. `otypeToStr` is the engine's own lookup; when it
  * returns nothing useful the raw code is better than inventing a category.
  */
 export function formatType(rawType, otypeToStr) {
-  const code = (rawType || '').trim();
+  const code = pickOtype(rawType);
   if (!code) return null;
   let label = null;
   try {
@@ -132,6 +155,6 @@ export function formatType(rawType, otypeToStr) {
   } catch (err) {
     label = null;
   }
-  if (!label || label === code) return code;
+  if (!label || label === code || /unknown nature/i.test(label)) return code;
   return label;
 }

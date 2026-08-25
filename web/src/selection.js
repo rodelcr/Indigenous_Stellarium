@@ -154,7 +154,10 @@ export function onObjectSelected(cb) {
       obj,
       designations: safe(() => obj.designations(), []) || [],
       culturalNames: safe(() => obj.culturalDesignations(), []) || [],
-      type: safe(() => obj.type, null),
+      // obj.type is undefined for catalogue objects; the codes are in
+      // jsonData.types (an array). Verified live against Sirius, which
+      // returns ["*", "?"].
+      type: safe(() => (obj.jsonData || {}).types, null),
       // jsonData carries what the catalogue knows beyond the info enum:
       // B-V, spectral type and parallax for stars; morphology and axes for
       // deep-sky objects (stars.c:228-244, dso.c:126-148).
