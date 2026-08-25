@@ -51,11 +51,11 @@ SOURCE_URL="${SOURCE_URL:-https://github.com/rodelcr/Indigenous_Stellarium}"
 }
 
 for required in web/public/engine web/public/skydata web/public/skycultures \
-                data/taxonomy.json web/node_modules; do
+                web/public/cities.json data/taxonomy.json web/node_modules; do
   [[ -e "$REPO_ROOT/$required" ]] || {
     echo "pages.sh: ERROR: $required not found — run scripts/build_engine.sh," \
-         "scripts/fetch_skycultures.py, and 'npm install' in web/ first" \
-         "(see README.md)." >&2
+         "scripts/fetch_skycultures.py, scripts/fetch_cities.py, and" \
+         "'npm install' in web/ first (see README.md)." >&2
     exit 1
   }
 done
@@ -68,6 +68,10 @@ mkdir -p "$STAGE_PUBLIC/skycultures"
 [[ -f "$REPO_ROOT/web/public/favicon.svg" ]] && cp "$REPO_ROOT/web/public/favicon.svg" "$STAGE_PUBLIC/"
 cp -R "$REPO_ROOT/web/public/engine" "$STAGE_PUBLIC/engine"
 cp -R "$REPO_ROOT/web/public/skydata" "$STAGE_PUBLIC/skydata"
+# Place list for the location picker. Lazy-loaded by the app, so its absence
+# degrades quietly to "coordinates only" rather than erroring — which is
+# exactly why it needs an explicit check rather than being noticed by a user.
+cp "$REPO_ROOT/web/public/cities.json" "$STAGE_PUBLIC/cities.json"
 # The engine's demo data carries sky cultures of its own; publish only the
 # one the app boots. See deploy/exclusions.json.
 prune_bundled_skycultures "$STAGE_PUBLIC/skydata"
@@ -154,6 +158,12 @@ if bundled_dir.is_dir():
         f"skydata ships sky cultures the attribution panel does not cover: "
         f"{sorted(stray)} — they would be published with no credit shown"
     )
+
+cities = out / "cities.json"
+assert cities.is_file(), (
+    "cities.json is missing from the bundle — the location picker's place "
+    "search would fail silently on the deployed site"
+)
 
 attribution = json.loads((out / "attribution.json").read_text(encoding="utf-8"))
 attributed = {r["id"] for r in attribution}

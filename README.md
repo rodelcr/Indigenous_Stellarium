@@ -78,10 +78,13 @@ python3 scripts/fetch_skycultures.py --dest web/public/skycultures \
     maori hawaiian_starlines tongan anutan tukano tupi lokono \
     northern_andes aztec inuit navajo blackfoot kamilaroi boorong western
 
-# 3. Frontend
+# 3. Place list for the location picker (one time, network)
+python3 scripts/fetch_cities.py --dest web/public/cities.json
+
+# 4. Frontend
 cd web && npm install && npm run dev
 
-# 4. Backend (optional — without it, drafts stay in your browser)
+# 5. Backend (optional — without it, drafts stay in your browser)
 python3 -m venv backend/.venv
 ./backend/.venv/bin/pip install -r backend/requirements.txt
 ./backend/.venv/bin/uvicorn backend.app:app --reload --port 8000
@@ -135,6 +138,9 @@ licence wrong is a specific, avoidable harm.
 
 The rendering engine is `stellarium-web-engine` by the Stellarium project and
 Noctua Software. The bundled demo star catalogue ships with that engine.
+
+Place names in the location picker come from
+[GeoNames](https://www.geonames.org), licensed CC BY 4.0.
 
 Two cultures available upstream — **Kamilaroi** and **Lokono** — are
 deliberately **excluded from every public deployment**. Each licence grants

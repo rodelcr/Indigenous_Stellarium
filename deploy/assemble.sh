@@ -29,7 +29,8 @@ OUT="${1:-$SCRIPT_DIR/.payload}"
 # copy and the two drift. They were out of sync when this was found — the
 # generated copy was missing the yana_phuyu node — so this path was silently
 # shipping a payload with a culture absent from its tree.
-for required in web/public/engine web/public/skydata web/public/skycultures data/taxonomy.json; do
+for required in web/public/engine web/public/skydata web/public/skycultures \
+                web/public/cities.json data/taxonomy.json; do
   if [[ ! -e "$REPO_ROOT/$required" ]]; then
     echo "assemble.sh: ERROR: $required not found — run scripts/build_engine.sh" \
          "and scripts/fetch_skycultures.py first (see README.md)." >&2
@@ -65,6 +66,7 @@ mkdir -p "$OUT/web/public/skycultures"
 [[ -f "$REPO_ROOT/web/public/favicon.svg" ]] && cp "$REPO_ROOT/web/public/favicon.svg" "$OUT/web/public/"
 cp -R "$REPO_ROOT/web/public/engine" "$OUT/web/public/engine"
 cp -R "$REPO_ROOT/web/public/skydata" "$OUT/web/public/skydata"
+cp "$REPO_ROOT/web/public/cities.json" "$OUT/web/public/cities.json"
 # Same hole as the static path had: the engine's demo data carries sky
 # cultures of its own, copied wholesale above. See deploy/exclusions.json.
 prune_bundled_skycultures "$OUT/web/public/skydata"

@@ -73,6 +73,9 @@ worse outcome than shipping nothing.
     maori hawaiian_starlines tongan anutan tukano tupi lokono \
     northern_andes aztec inuit navajo blackfoot kamilaroi boorong western
 
+# One-time: build the offline place list for the location picker (network)
+./backend/.venv/bin/python scripts/fetch_cities.py --dest web/public/cities.json
+
 # Frontend dev server (proxies /api -> :8000)
 cd web && npm install && npm run dev
 
