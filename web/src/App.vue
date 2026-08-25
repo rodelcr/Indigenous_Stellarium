@@ -9,6 +9,8 @@ import CulturePanel from './components/CulturePanel.vue';
 import StarInfo from './components/StarInfo.vue';
 import AuthoringPanel from './components/AuthoringPanel.vue';
 import InfoPanel from './components/InfoPanel.vue';
+import ControlBar from './components/ControlBar.vue';
+import HorizonOverlay from './components/HorizonOverlay.vue';
 
 const canvas = ref(null);
 const loadError = ref(null);
@@ -16,6 +18,9 @@ const loadError = ref(null);
 // placeholder nodes), or null before anything is selected. Just passed
 // straight through to AuthoringPanel — App.vue does not interpret it.
 const selectedCultureKey = ref(null);
+// Object URL for the viewer's own horizon photo, or null. Owned by
+// ControlBar (which revokes it); App.vue only passes it through.
+const horizonSrc = ref(null);
 
 onMounted(async () => {
   try {
@@ -45,6 +50,8 @@ onMounted(async () => {
     <CulturePanel @culture-selected="selectedCultureKey = $event" />
     <AuthoringPanel :culture-key="selectedCultureKey" />
   </div>
+  <HorizonOverlay :src="horizonSrc" />
+  <ControlBar @horizon-changed="horizonSrc = $event" />
   <StarInfo />
   <InfoPanel />
 </template>
