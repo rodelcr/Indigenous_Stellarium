@@ -52,6 +52,22 @@ function addDataSources(stel) {
   core.stars.addDataSource({ url: base + 'stars' });
   core.skycultures.addDataSource({ url: base + 'skycultures/western', key: 'western' });
   core.dsos.addDataSource({ url: base + 'dso' });
+  // Deeper deep-sky catalogues, when a local mirror exists.
+  //
+  // The engine's bundled `dso` survey is order 0 only (512 KB); the mirrored
+  // `dso`/`dso2` surveys run to order 3 (17 MB each) and are what make
+  // nebulae and galaxies actually resolve. scripts/fetch_surveys.py fetches
+  // them; deploy/exclusions.json withholds them from public builds because
+  // their properties files state no copyright, acknowledgement or creator
+  // and no provenance is documented anywhere upstream — so there is nobody
+  // to credit, and shipping them uncredited is not something this project
+  // gets to do.
+  //
+  // Registered unconditionally: the engine treats a survey whose tiles 404
+  // as empty, so on a public build these are inert rather than an error.
+  // That keeps one code path instead of a build-time branch.
+  core.dsos.addDataSource({ url: base + 'surveys/dso' });
+  core.dsos.addDataSource({ url: base + 'surveys/dso2' });
   core.landscapes.addDataSource({ url: base + 'landscapes/guereins', key: 'guereins' });
   core.milkyway.addDataSource({ url: base + 'surveys/milkyway' });
   core.minor_planets.addDataSource({ url: base + 'mpcorb.dat', key: 'mpc_asteroids' });

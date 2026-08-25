@@ -84,6 +84,20 @@ export function isCatalogueDesignation(d) {
 }
 
 /**
+ * Strip SIMBAD's designation prefixes from something meant to be read as a
+ * name. Common names arrive as "NAME Andromeda Nebula" and Bayer/Flamsteed
+ * ones as "* alf Boo"; showing the marker verbatim reads as part of the
+ * name, which is how "NAME Andromeda Nebula" ended up on screen.
+ */
+export function cleanDesignation(d) {
+  return String(d == null ? '' : d)
+    .trim()
+    .replace(/^NAME\s+/i, '')
+    .replace(/^\*\s*/, '')
+    .trim();
+}
+
+/**
  * Choose what to call the object.
  *
  * Order: a name in the active sky culture, then a proper name, then a
@@ -98,7 +112,8 @@ export function chooseNames(designations, culturalNames) {
   const cultural = Array.isArray(culturalNames) ? culturalNames : [];
   const first = cultural.find((c) => c && (c.name_native || c.name_english));
   const ds = Array.isArray(designations) ? designations.map(String) : [];
-  const proper = ds.find((d) => !isCatalogueDesignation(d) && !/^\*/.test(d));
+  const properRaw = ds.find((d) => !isCatalogueDesignation(d) && !/^\*/.test(d));
+  const proper = properRaw ? cleanDesignation(properRaw) : null;
 
   if (first) {
     const native = first.name_native || null;
@@ -110,7 +125,7 @@ export function chooseNames(designations, culturalNames) {
     };
   }
   if (proper) return { primary: proper, secondary: null, pronounce: null };
-  return { primary: ds[0] || null, secondary: null, pronounce: null };
+  return { primary: ds[0] ? cleanDesignation(ds[0]) || ds[0] : null, secondary: null, pronounce: null };
 }
 
 /** Catalogue designations, in the order the engine gave them. */

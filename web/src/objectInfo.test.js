@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   formatMagnitude, formatDistance, formatAngularSize, formatPhase,
   chooseNames, catalogueDesignations, isCatalogueDesignation, formatType,
-  pickOtype, AU_PER_LY,
+  pickOtype, cleanDesignation, AU_PER_LY,
 } from './objectInfo.js'
 
 describe('formatMagnitude', () => {
@@ -195,5 +195,37 @@ describe('formatType with real engine input', () => {
 
   it('returns null when the engine gives nothing', () => {
     expect(formatType(undefined, () => 'Star')).toBeNull()
+  })
+})
+
+describe('cleanDesignation', () => {
+  // "NAME Andromeda Nebula" really did render on screen with the marker
+  // showing. SIMBAD's prefixes are catalogue syntax, not part of the name.
+  it('strips the SIMBAD NAME marker', () => {
+    expect(cleanDesignation('NAME Andromeda Nebula')).toBe('Andromeda Nebula')
+  })
+
+  it('strips the leading star marker from Bayer designations', () => {
+    expect(cleanDesignation('* alf Boo')).toBe('alf Boo')
+  })
+
+  it('leaves an ordinary name alone', () => {
+    expect(cleanDesignation('Arcturus')).toBe('Arcturus')
+  })
+
+  it('survives null and undefined', () => {
+    expect(cleanDesignation(null)).toBe('')
+    expect(cleanDesignation(undefined)).toBe('')
+  })
+})
+
+describe('chooseNames strips markers from what it shows', () => {
+  it('does not surface the NAME marker as part of the title', () => {
+    expect(chooseNames(['NAME Andromeda Nebula', 'M 31'], []).primary)
+      .toBe('Andromeda Nebula')
+  })
+
+  it('falls back to a cleaned catalogue id when there is nothing else', () => {
+    expect(chooseNames(['M 31'], []).primary).toBe('M 31')
   })
 })

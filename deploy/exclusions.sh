@@ -50,6 +50,15 @@ print("\n".join(ids))
 ' "$_EXCLUSIONS_JSON"
 }
 
+_read_unattributed_surveys() {
+  python3 -c '
+import json, sys
+with open(sys.argv[1]) as fh:
+    data = json.load(fh)
+print("\n".join(data.get("unattributed_surveys") or []))
+' "$_EXCLUSIONS_JSON"
+}
+
 _read_bundled_allowed() {
   python3 -c '
 import json, sys
@@ -123,6 +132,40 @@ assert_no_excluded_cultures() {
     echo "ERROR: refusing to publish — see deploy/exclusions.json." >&2
     return 1
   fi
+  return 0
+}
+
+UNATTRIBUTED_SURVEYS=()
+while IFS= read -r _line; do
+  [[ -n "$_line" ]] && UNATTRIBUTED_SURVEYS+=("$_line")
+done < <(_read_unattributed_surveys)
+
+# prune_unattributed_surveys <skydata_dir>
+#
+# Third content source, same shape as the bundled sky cultures: skydata/ is
+# copied wholesale, so a survey mirrored into skydata/surveys/ for local
+# development would ship publicly without anyone deciding to. These carry no
+# obs_copyright, obs_ack or hips_creator, so there is nobody to credit —
+# see deploy/exclusions.json.
+prune_unattributed_surveys() {
+  local skydata_dir="$1"
+  local sv_dir="$skydata_dir/surveys"
+  [[ -d "$sv_dir" ]] || return 0
+
+  local name
+  for name in "${UNATTRIBUTED_SURVEYS[@]}"; do
+    if [[ -d "$sv_dir/$name" ]]; then
+      echo "  withholding survey '$name' (no attribution stated by its source)"
+      rm -rf "${sv_dir:?}/$name"
+    fi
+  done
+
+  for name in "${UNATTRIBUTED_SURVEYS[@]}"; do
+    if [[ -e "$sv_dir/$name" ]]; then
+      echo "ERROR: unattributed survey '$name' survived pruning at $sv_dir/$name" >&2
+      return 1
+    fi
+  done
   return 0
 }
 

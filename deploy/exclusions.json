@@ -22,7 +22,12 @@
     "",
     "This is an ALLOWLIST, not a denylist, on purpose: it names what the app",
     "actually loads, so a future skydata refresh that adds a culture fails the",
-    "build instead of silently publishing it."
+    "build instead of silently publishing it.",
+    "",
+    "'unattributed_surveys' is a THIRD source of content, found the same way",
+    "the belarusian sky culture was: web/public/skydata is copied wholesale by",
+    "both deploy paths, so anything dropped in there ships. Mirrored HiPS",
+    "surveys land in skydata/surveys/ and would go out unexamined."
   ],
   "cultures": [
     {
@@ -48,5 +53,10 @@
   "bundled_skycultures_allowed": [
     "western"
   ],
-  "_bundled_note": "Only 'western' is allowed because engine.js boots exactly one bundled culture (core.skycultures.addDataSource with key 'western'). Anything else in skydata/skycultures/ is unreachable in the UI, absent from the attribution panel, and therefore published with no credit shown. The 'belarusian' culture was in exactly that state and its own description.md states 'Text and data: TODO' -- upstream has not determined a licence for it, so we certainly cannot assert one by republishing it."
+  "_bundled_note": "Only 'western' is allowed because engine.js boots exactly one bundled culture (core.skycultures.addDataSource with key 'western'). Anything else in skydata/skycultures/ is unreachable in the UI, absent from the attribution panel, and therefore published with no credit shown. The 'belarusian' culture was in exactly that state and its own description.md states 'Text and data: TODO' -- upstream has not determined a licence for it, so we certainly cannot assert one by republishing it.",
+  "unattributed_surveys": [
+    "dso",
+    "dso2"
+  ],
+  "_surveys_note": "Mirrored from data.stellarium.org for local development. NOT shipped: their properties files carry no obs_copyright, no obs_ack and no hips_creator, there is no README or LICENSE alongside them on the server, and nothing in the engine repository records what they were built from. The designations they carry (Messier, NGC, IC) are historical catalogues, but the compiled positions, magnitudes and morphologies are somebody's work and we cannot say whose. Publishing 34.7 MB of it with no credit is the belarusian mistake again. Resolve with upstream before shipping; until then the app falls back to the engine's own bundled dso survey, which ships with it."
 }

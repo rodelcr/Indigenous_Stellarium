@@ -75,6 +75,7 @@ cp "$REPO_ROOT/web/public/cities.json" "$STAGE_PUBLIC/cities.json"
 # The engine's demo data carries sky cultures of its own; publish only the
 # one the app boots. See deploy/exclusions.json.
 prune_bundled_skycultures "$STAGE_PUBLIC/skydata"
+prune_unattributed_surveys "$STAGE_PUBLIC/skydata"
 
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   name="$(basename "$dir")"
@@ -158,6 +159,21 @@ if bundled_dir.is_dir():
         f"skydata ships sky cultures the attribution panel does not cover: "
         f"{sorted(stray)} — they would be published with no credit shown"
     )
+
+# Nothing unattributed may reach the public bundle. Checked on the OUTPUT,
+# because the whole point is that skydata/ is copied wholesale and a survey
+# dropped in there for local work would otherwise ship silently.
+import os
+surveys_dir = out / "skydata" / "surveys"
+if surveys_dir.is_dir():
+    shipped_surveys = {p.name for p in surveys_dir.iterdir() if p.is_dir()}
+    for s in shipped_surveys:
+        props = surveys_dir / s / "properties"
+        text = props.read_text(encoding="utf-8", errors="replace") if props.is_file() else ""
+        assert "obs_copyright" in text or "obs_ack" in text or "hips_creator" in text or s in ("milkyway", "sso"), (
+            f"survey {s!r} is in the bundle with no attribution in its "
+            "properties file — see deploy/exclusions.json"
+        )
 
 cities = out / "cities.json"
 assert cities.is_file(), (
