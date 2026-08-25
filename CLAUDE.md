@@ -76,8 +76,9 @@ worse outcome than shipping nothing.
 # Frontend dev server (proxies /api -> :8000)
 cd web && npm install && npm run dev
 
-# Backend
-./backend/.venv/bin/uvicorn backend.app:app --reload --port 8000
+# Backend — must run FROM backend/, since app.py does a sibling `import db`.
+# `uvicorn backend.app:app` from the repo root fails with ModuleNotFoundError.
+cd backend && .venv/bin/uvicorn app:app --reload --port 8000
 
 # Tests — 68 frontend, 42 backend/scripts
 cd web && npx vitest run
