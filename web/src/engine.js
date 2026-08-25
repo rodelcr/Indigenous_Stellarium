@@ -114,6 +114,13 @@ export function initEngine(canvas) {
               stelInstance = stel;
               addDataSources(stel);
               setInitialVisibility(stel);
+              // Dev-only handle. The engine is deliberately module-private
+              // (everything goes through getStel()), which also makes it
+              // unreachable from a browser console — so diagnosing "does
+              // this constellation render where the catalogue says it
+              // should?" meant guessing from screenshots. Never exposed in
+              // a production build.
+              if (import.meta.env.DEV) globalThis.__stel = stel;
               resolve(stel);
             } catch (err) {
               reject(err);
