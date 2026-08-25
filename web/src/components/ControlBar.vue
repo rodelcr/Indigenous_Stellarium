@@ -18,12 +18,14 @@ import {
   toDateTimeLocalValue, fromDateTimeLocalValue, REAL_TIME,
 } from '../timeControls.js';
 import { createHorizonStore } from '../horizonImage.js';
+import LocationPanel from './LocationPanel.vue';
 
 const emit = defineEmits(['horizon-changed']);
 
 const speed = ref(REAL_TIME);
 const clock = ref('');
 const showDatePicker = ref(false);
+const showLocation = ref(false);
 const dateValue = ref('');
 const groundVisible = ref(false);
 const atmosphereVisible = ref(false);
@@ -176,6 +178,12 @@ onUnmounted(() => {
       <button
         type="button"
         class="ctl wide"
+        :class="{ on: showLocation }"
+        @click="showLocation = !showLocation"
+      >Location…</button>
+      <button
+        type="button"
+        class="ctl wide"
         :class="{ on: groundVisible }"
         :aria-pressed="groundVisible"
         @click="toggleGround"
@@ -207,6 +215,8 @@ onUnmounted(() => {
       <button type="button" class="ctl wide" @click="showDatePicker = false">Cancel</button>
     </div>
   </div>
+
+  <LocationPanel :open="showLocation" @close="showLocation = false" />
 
   <p v-if="horizonError" class="horizon-error">{{ horizonError }}</p>
 </template>
