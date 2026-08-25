@@ -2,19 +2,34 @@
  * Shared visual tokens.
  *
  * House style is deliberately utilitarian: this is an instrument for reading
- * the sky, not a consumer product. Monospace throughout, square corners, no
- * glow/bloom/gradient/blur, and selection shown by a marker rather than a
- * coloured fill. Anything that draws the eye should be sky data, not chrome.
+ * the sky, not a consumer product. Square corners, no glow/bloom/gradient/
+ * blur, and selection shown by a marker rather than a coloured fill.
+ * Anything that draws the eye should be sky data, not chrome.
+ *
+ * Type: EB Garamond for everything a person reads, monospace kept only for
+ * catalogue identifiers and coordinates, where digits need to align in a
+ * column and where the point is that the string is machine data. An
+ * all-monospace interface reads as a terminal costume; these are people's
+ * star names, and they deserve a text face.
  *
  * Components use these tokens rather than literal values so the style stays
  * consistent as panels are added.
  */
 
 :root {
-  /* Consolas first; the rest are fallbacks for non-Windows machines. */
+  /* Self-hosted (src/assets/fonts.css) so it renders identically everywhere
+     and so no third party is contacted on page load. The named fallbacks
+     are real Garamonds where installed; the generic serif is the floor. */
+  --font-serif: "EB Garamond", Garamond, "Adobe Garamond Pro", "Hoefler Text",
+    Baskerville, serif;
+  /* Catalogue ids and coordinates only. Consolas first for Windows; Menlo
+     and the rest cover everything else. */
   --font-mono: Consolas, "DejaVu Sans Mono", Menlo, "Liberation Mono", monospace;
-  --font-size: 13px;
-  --line-height: 1.45;
+  /* Garamond has a small x-height, so it needs more size than the 13px the
+     monospace stack used, and a little more leading. */
+  --font-size: 15px;
+  --font-size-mono: 12px;
+  --line-height: 1.5;
 
   /* Panels sit over the sky, so they stay dark and mostly transparent. */
   --panel-bg: rgba(10, 10, 14, 0.88);

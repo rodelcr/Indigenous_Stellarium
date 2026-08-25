@@ -221,7 +221,7 @@ function selectChild(child) {
   color: var(--text);
   border-radius: var(--radius);
   padding: 0.75rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-serif);
   font-size: var(--font-size);
   line-height: var(--line-height);
   z-index: 10;

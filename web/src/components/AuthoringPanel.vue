@@ -550,7 +550,7 @@ onUnmounted(() => {
   color: var(--text);
   border-radius: var(--radius);
   padding: 0.75rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-serif);
   font-size: var(--font-size);
   line-height: var(--line-height);
   z-index: 10;
@@ -610,6 +610,9 @@ onUnmounted(() => {
   margin-left: 0.4rem;
   font-size: 11px;
   color: var(--text-dim);
+  /* Catalogue identifier — monospace so the digits column aligns. */
+  font-family: var(--font-mono);
+  font-size: var(--font-size-mono);
 }
 
 .button-row {

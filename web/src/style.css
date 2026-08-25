@@ -13,7 +13,7 @@ body,
   height: 100%;
   overflow: hidden;
   background: #000;
-  font-family: var(--font-mono);
+  font-family: var(--font-serif);
   color: var(--text);
 }
 

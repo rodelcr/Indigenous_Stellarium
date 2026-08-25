@@ -59,7 +59,7 @@ onMounted(async () => {
   background: var(--danger-bg);
   border: 1px solid var(--danger-border);
   color: var(--text-bright);
-  font-family: var(--font-mono);
+  font-family: var(--font-serif);
   font-size: var(--font-size);
   line-height: var(--line-height);
   border-radius: var(--radius);

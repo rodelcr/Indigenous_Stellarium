@@ -78,7 +78,7 @@ const primaryName = computed(() => {
   color: var(--text);
   border-radius: var(--radius);
   padding: 0.75rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-serif);
   font-size: var(--font-size);
   line-height: var(--line-height);
   z-index: 10;
@@ -107,7 +107,11 @@ const primaryName = computed(() => {
    in the panel. */
 .star-hip {
   margin: 0;
-  font-size: 11px;
+  /* Monospace: this is a catalogue identifier, not a name. The typeface
+     difference is the point — it marks the string as machine data next to
+     the human name above it. */
+  font-family: var(--font-mono);
+  font-size: var(--font-size-mono);
   color: var(--text-dim);
 }
 </style>

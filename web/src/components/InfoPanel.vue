@@ -72,12 +72,12 @@ onMounted(async () => {
   <div class="sandbox-badge">
     <p class="sandbox-text">
       <template v-if="isStatic"
-        >Demo sandbox — drafts stay in your own browser, and submissions are
-        not yet reviewed by community stewards.</template
+        >Demo. Drafts stay in your browser. Nothing here is reviewed by
+        community stewards yet.</template
       >
       <template v-else
-        >Demo sandbox — drafts may not persist, and submissions are not yet
-        reviewed by community stewards.</template
+        >Demo. Drafts may not persist. Nothing here is reviewed by community
+        stewards yet.</template
       >
     </p>
     <button type="button" class="info-toggle" @click="open = !open">
@@ -90,29 +90,26 @@ onMounted(async () => {
       <section class="info-section">
         <h2 class="info-heading">This is a demo sandbox</h2>
         <p>
-          This deployment is Phase 1 of Indigenous Stellarium: a viewer and
-          authoring demo meant to be shown to communities and
-          collaborators to recruit per-culture stewards, not a live
-          contribution intake.
+          Phase 1 of Indigenous Stellarium. It exists to show communities
+          and collaborators what the tool does, so that stewards can be
+          found for each culture. It is not open intake for cultural
+          knowledge.
         </p>
         <ul>
           <li v-if="isStatic">
-            This deployment has no backend. Drafts you save are stored only
-            in your own browser and are never transmitted anywhere — not to
-            us, not to anyone. Clearing your browser data deletes them, and
-            they will not follow you to another device. Use the download
-            button to keep a copy.
+            There is no server. What you save is written to your browser's
+            own storage and sent nowhere. Clear your browser data and it is
+            gone; it will not appear on another device. Download a copy if
+            you want to keep it.
           </li>
           <li v-else>
-            Saved drafts are session/storage-scoped. This deployment runs on
-            free-tier hosting with ephemeral storage, so drafts saved here
-            can be lost on a rebuild or restart.
+            Drafts are saved on free-tier hosting with temporary storage. A
+            rebuild or restart can erase them.
           </li>
           <li>
-            Nothing submitted here is reviewed by community stewards. The
-            steward/governance review workflow is a Phase 2 feature and
-            does not exist yet — authoring here demonstrates the
-            mechanism, it does not steward what you enter.
+            No steward reads what you enter. The review process described in
+            the governance notes is not built yet. Authoring here shows how
+            the tool works; it does not put your knowledge in anyone's care.
           </li>
         </ul>
       </section>
@@ -123,15 +120,13 @@ onMounted(async () => {
           This platform is built on
           <a href="https://github.com/Stellarium/stellarium-web-engine" target="_blank" rel="noopener noreferrer"
             >stellarium-web-engine</a
-          >, licensed AGPL-3.0. Its network-use clause means anyone
-          interacting with this application over a network is entitled to
-          the complete corresponding source, including this deployment's
-          own modifications.
+          >, licensed AGPL-3.0. Under its network-use clause, anyone using
+          this application is entitled to its complete source, including
+          whatever we changed.
         </p>
         <p>
-          This deployment's own complete source — frontend, backend, build
-          and export tooling, and the patches carried against the engine —
-          is published at
+          Everything running here (frontend, backend, build and export
+          tooling, and the patches we carry against the engine) is at
           <a :href="SOURCE_URL" target="_blank" rel="noopener noreferrer">{{
             SOURCE_URL
           }}</a
@@ -149,9 +144,8 @@ onMounted(async () => {
             rel="noopener noreferrer"
             >stellarium-skycultures</a
           >
-          repository. Each entry below is generated directly from that
-          culture's own <code>description.md</code> — never hand-written
-          for this deployment.
+          repository. Each entry below is taken from that culture's own
+          <code>description.md</code>. None of it is written by us.
         </p>
         <p v-if="loadError" class="info-error">Failed to load attribution data.</p>
         <div v-for="c in cultures" :key="c.id" class="culture-attribution">
@@ -177,7 +171,7 @@ onMounted(async () => {
   color: var(--text);
   border-radius: var(--radius);
   padding: 0.6rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-serif);
   font-size: 11px;
   line-height: var(--line-height);
   z-index: 20;
@@ -223,7 +217,7 @@ onMounted(async () => {
   color: var(--text);
   border-radius: var(--radius);
   padding: 1.25rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-serif);
   font-size: var(--font-size);
   line-height: var(--line-height);
 }
