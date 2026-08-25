@@ -81,6 +81,19 @@ function setInitialVisibility(stel) {
   core.constellations.lines_visible = false;
   core.constellations.labels_visible = false;
   core.constellations.images_visible = false;
+
+  // Upstream draws ONLY the constellation under the centre of the view and
+  // hides every other one, so figures popped in and out as you panned and
+  // the sky read as empty anywhere but the middle. Our engine patch
+  // (scripts/constellation-dimming.patch) turns that flag into an emphasis
+  // control instead: everything in view is drawn, the pointed one at full
+  // strength and the rest at `unpointed_dim`, easing between the two.
+  //
+  // Kept ON deliberately — with it off, every figure draws at equal weight
+  // and a busy sky becomes hard to read. The point is emphasis, not
+  // all-or-nothing.
+  core.constellations.show_only_pointed = true;
+  core.constellations.unpointed_dim = 0.35;
 }
 
 /**

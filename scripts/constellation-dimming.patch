@@ -1,0 +1,117 @@
+diff --git a/src/modules/constellations.c b/src/modules/constellations.c
+index 7b39637f..22e8dfc1 100644
+--- a/src/modules/constellations.c
++++ b/src/modules/constellations.c
+@@ -65,6 +65,14 @@ typedef struct constellation {
+     // There is no valid pvo, radius, cap etc.. for this object until
+     // first_update_complete is true
+     bool first_update_complete;
++
++    // patched by indigenous-stellarium: how strongly this constellation is
++    // drawn, 1.0 for the one under the centre of the view and
++    // `unpointed_dim` for the rest. Smoothed towards emphasis_target in
++    // constellations_update() so panning fades figures up and down instead
++    // of switching them on and off.
++    double emphasis;
++    double emphasis_target;
+ } constellation_t;
+ 
+ /*
+@@ -80,6 +88,10 @@ typedef struct constellations {
+     bool        lines_animation;
+     bool        show_only_pointed;
+     double      illustrations_bscale;
++    // patched by indigenous-stellarium: alpha multiplier for constellations
++    // that are not the one being pointed at, when show_only_pointed is set.
++    // Exposed to JS so it can be tuned without rebuilding the engine.
++    double      unpointed_dim;
+ } constellations_t;
+ 
+ static int constellation_update(constellation_t *con, const observer_t *obs);
+@@ -156,6 +168,9 @@ static int constellation_init(obj_t *obj, json_value *args)
+ 
+     fader_init2(&cons->image_loaded_fader, false, 1);
+     fader_init2(&cons->visible, false, 0.5);
++    // patched by indigenous-stellarium
++    cons->emphasis = 1.0;
++    cons->emphasis_target = 1.0;
+ 
+     // For the moment, since we create the constellation from within C
+     // only, we pass the info as a pointer to the structure!
+@@ -867,18 +882,18 @@ static int render_label(constellation_t *con, const painter_t *painter_,
+ static bool constellation_is_visible(const constellation_t *con,
+                                      const painter_t *painter)
+ {
+-    const constellations_t *cons = (const constellations_t*)con->obj.parent;
+-
+     if (!con->first_update_complete) return false;
+ 
+     // Show selected constellation no matter what.
+     if (core->selection && &con->obj == core->selection)
+         return true;
+ 
+-    // Only show non centered constellations if 'show_only_pointed' is set.
+-    if (cons->show_only_pointed && con->info.iau[0]) {
+-        return constellation_is_pointed(con, painter);
+-    }
++    // patched by indigenous-stellarium: 'show_only_pointed' used to HIDE
++    // every constellation except the one under the centre of the view, so
++    // figures appeared and vanished as you panned and the sky read as empty
++    // anywhere but the middle. It now controls emphasis instead (see
++    // constellation_render), and visibility is decided purely by whether
++    // the figure is actually in view, like every non-IAU culture already was.
+ 
+     // Test either the image or the line.
+     if (constellation_lines_in_view(con, painter)) return true;
+@@ -913,6 +928,17 @@ static int constellation_render(obj_t *obj, const painter_t *_painter)
+     con->visible.target = constellation_is_visible(con, &painter);
+     if (con->visible.value == 0.0) return 0;
+ 
++    // patched by indigenous-stellarium: the constellation under the centre
++    // of the view is drawn at full strength, the rest are dimmed rather than
++    // removed. Selected constellations always read at full strength.
++    if (cons->show_only_pointed && con->info.iau[0] && !selected) {
++        con->emphasis_target = constellation_is_pointed(con, &painter)
++                               ? 1.0 : cons->unpointed_dim;
++    } else {
++        con->emphasis_target = 1.0;
++    }
++    painter.color[3] *= con->emphasis;
++
+     render_lines(con, &painter, selected);
+     render_label(con, &painter, selected);
+     render_img(con, &painter, selected);
+@@ -977,6 +1003,7 @@ static int constellations_init(obj_t *obj, json_value *args)
+     conss->lines_animation = true;
+     conss->show_only_pointed = true;
+     conss->illustrations_bscale = 1.0;
++    conss->unpointed_dim = 0.35; // patched by indigenous-stellarium
+     fader_init(&conss->lines_visible, false);
+     fader_init(&conss->labels_visible, false);
+     fader_init(&conss->images_visible, false);
+@@ -1004,6 +1031,15 @@ static int constellations_update(obj_t *obj, double dt)
+     MODULE_ITER(obj, con, "constellation") {
+         fader_update(&con->image_loaded_fader, dt);
+         fader_update(&con->visible, dt);
++        // patched by indigenous-stellarium: ease emphasis towards its
++        // target over ~0.5s, matching the visible fader's feel so the
++        // brightening reads as the same kind of motion.
++        {
++            const double speed = dt / 0.5;
++            double d = con->emphasis_target - con->emphasis;
++            if (fabs(d) <= speed) con->emphasis = con->emphasis_target;
++            else con->emphasis += (d > 0 ? speed : -speed);
++        }
+     }
+     return 0;
+ }
+@@ -1081,6 +1117,9 @@ static obj_klass_t constellations_klass = {
+                  MEMBER(constellations_t, show_only_pointed)),
+         PROPERTY(illustrations_bscale, TYPE_FLOAT,
+                  MEMBER(constellations_t, illustrations_bscale)),
++        // patched by indigenous-stellarium
++        PROPERTY(unpointed_dim, TYPE_FLOAT,
++                 MEMBER(constellations_t, unpointed_dim)),
+         {}
+     },
+ };

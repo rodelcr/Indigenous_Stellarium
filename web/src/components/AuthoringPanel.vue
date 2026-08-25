@@ -539,11 +539,13 @@ onUnmounted(() => {
 }
 
 .authoring-panel {
-  position: fixed;
-  bottom: 1rem;
-  left: 1rem;
+  /* See CulturePanel: these two used to be independently fixed to the same
+     corner and overlapped. This one keeps its natural height and the
+     culture list flexes around it. */
+  flex: 0 1 auto;
+  min-height: 0;
   width: 320px;
-  max-height: calc(100vh - 2rem);
+  max-height: 55vh;
   overflow-y: auto;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);

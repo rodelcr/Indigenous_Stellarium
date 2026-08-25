@@ -37,7 +37,7 @@ ENGINE_REPO_URL="https://github.com/Stellarium/stellarium-web-engine"
 # clean vendor/, and confirm all three patches still apply.
 ENGINE_COMMIT="5403e930416f6dc1dbcca08486a045dd8be67f53"
 
-echo "==> [1/8] Checking toolchain (emcc, scons)"
+echo "==> [1/9] Checking toolchain (emcc, scons)"
 if ! command -v emcc >/dev/null 2>&1; then
   echo "ERROR: emcc (Emscripten) not found on PATH. Install with: brew install emscripten" >&2
   exit 1
@@ -49,7 +49,7 @@ fi
 echo "    emcc:  $(emcc --version | head -1)"
 echo "    scons: $(scons --version | sed -n '2p')"
 
-echo "==> [2/8] Fetching stellarium-web-engine into vendor/"
+echo "==> [2/9] Fetching stellarium-web-engine into vendor/"
 if [ -d "${VENDOR_DIR}/.git" ]; then
   echo "    vendor/stellarium-web-engine already present — skipping clone"
 elif [ -e "${VENDOR_DIR}" ]; then
@@ -115,7 +115,7 @@ echo "    engine at $(git -C "${VENDOR_DIR}" rev-parse --short HEAD) (pinned)"
 #      definitions in vendored zlib, and one unused-but-set-variable in
 #      src/modules/comets.c. All three are suppressed via -Wno- flags
 #      rather than hand-editing vendored/engine source.
-echo "==> [3/8] Patching vendor/ SConstruct for Emscripten 6.x compatibility"
+echo "==> [3/9] Patching vendor/ SConstruct for Emscripten 6.x compatibility"
 BUILD_PATCH_FILE="${REPO_ROOT}/scripts/engine-emscripten6-compat.patch"
 if grep -q "patched by indigenous-stellarium" "${VENDOR_DIR}/SConstruct" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -136,7 +136,7 @@ fi
 # calls — while the adjacent vuetify@2.x CSS `<link>` was already pinned.
 # Patching so the smoke test (and anyone else who reaches for this demo
 # page) works out of the box.
-echo "==> [4/8] Patching apps/simple-html/ demo page for the smoke test"
+echo "==> [4/9] Patching apps/simple-html/ demo page for the smoke test"
 DEMO_PATCH_FILE="${REPO_ROOT}/scripts/engine-demo-page-fixes.patch"
 if grep -q "vue@2/dist/vue.js" "${VENDOR_DIR}/apps/simple-html/stellarium-web-engine.html" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -156,7 +156,7 @@ fi
 # scripts/hip-designation.patch makes star_get_designations() always
 # emit "HIP <n>" when star->hip is set, guarding against a duplicate
 # emission in the id-less-star fallback case.
-echo "==> [5/8] Patching vendor/ stars.c to expose HIP designations"
+echo "==> [5/9] Patching vendor/ stars.c to expose HIP designations"
 HIP_PATCH_FILE="${REPO_ROOT}/scripts/hip-designation.patch"
 if grep -q "patched by indigenous-stellarium" "${VENDOR_DIR}/src/modules/stars.c" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -165,13 +165,29 @@ else
   echo "    applied ${HIP_PATCH_FILE}"
 fi
 
-echo "==> [6/8] Building engine WASM (make js)"
+echo "==> [6/9] Patching vendor/ constellations.c for constellation dimming"
+# Upstream hides every constellation except the one under the centre of the
+# view (show_only_pointed, on by default), so figures pop in and out as you
+# pan and the sky reads as empty everywhere but the middle. This patch turns
+# that flag into an emphasis control: everything in view is drawn, the
+# pointed one at full strength and the rest dimmed, easing between the two.
+# The dim level is exposed to JS as constellations.unpointed_dim so it can be
+# tuned without rebuilding.
+CONS_PATCH_FILE="${REPO_ROOT}/scripts/constellation-dimming.patch"
+if grep -q "patched by indigenous-stellarium" "${VENDOR_DIR}/src/modules/constellations.c" 2>/dev/null; then
+  echo "    already patched — skipping"
+else
+  (cd "${VENDOR_DIR}" && git apply "${CONS_PATCH_FILE}")
+  echo "    applied ${CONS_PATCH_FILE}"
+fi
+
+echo "==> [7/9] Building engine WASM (make js)"
 (
   cd "${VENDOR_DIR}"
   make js
 )
 
-echo "==> [7/8] Staging build/stellarium-web-engine.{js,wasm} -> web/public/engine/"
+echo "==> [8/9] Staging build/stellarium-web-engine.{js,wasm} -> web/public/engine/"
 mkdir -p "${ENGINE_OUT}"
 BUILT_JS="${VENDOR_DIR}/build/stellarium-web-engine.js"
 BUILT_WASM="${VENDOR_DIR}/build/stellarium-web-engine.wasm"
@@ -184,7 +200,7 @@ fi
 cp "${BUILT_JS}" "${ENGINE_OUT}/stellarium-web-engine.js"
 cp "${BUILT_WASM}" "${ENGINE_OUT}/stellarium-web-engine.wasm"
 
-echo "==> [8/8] Staging apps/test-skydata/ -> web/public/skydata/"
+echo "==> [9/9] Staging apps/test-skydata/ -> web/public/skydata/"
 rm -rf "${SKYDATA_OUT}"
 cp -R "${VENDOR_DIR}/apps/test-skydata" "${SKYDATA_OUT}"
 

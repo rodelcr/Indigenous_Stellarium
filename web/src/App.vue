@@ -35,9 +35,17 @@ onMounted(async () => {
   <div v-if="loadError" class="load-error">
     Failed to load the sky engine. Check the console for details.
   </div>
-  <CulturePanel @culture-selected="selectedCultureKey = $event" />
+  <!-- Culture list and authoring panel share one left column. They used to
+       be independently position:fixed to the same corner, each allowed to
+       grow to the full viewport height, so the authoring panel covered the
+       bottom of the culture list and its last entries could not be clicked
+       at all -- Western/IAU being last, it was unreachable at ordinary
+       window heights. -->
+  <div class="left-column">
+    <CulturePanel @culture-selected="selectedCultureKey = $event" />
+    <AuthoringPanel :culture-key="selectedCultureKey" />
+  </div>
   <StarInfo />
-  <AuthoringPanel :culture-key="selectedCultureKey" />
   <InfoPanel />
 </template>
 
@@ -48,6 +56,24 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.left-column {
+  position: fixed;
+  top: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  /* Wide enough for the wider of the two panels; each sets its own width. */
+  width: 320px;
+  /* The column itself must not intercept clicks on the sky between panels. */
+  pointer-events: none;
+}
+
+.left-column > * {
+  pointer-events: auto;
 }
 
 .load-error {

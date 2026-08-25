@@ -210,11 +210,15 @@ function selectChild(child) {
 
 <style scoped>
 .culture-panel {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
+  /* Sits in the shared left column laid out by App.vue. It used to be
+     `position: fixed` with max-height: calc(100vh - 2rem), as does the
+     authoring panel -- so at ordinary window heights the authoring panel
+     covered the bottom of this list and the last entries could not be
+     clicked at all. Western/IAU is the last entry, so it was unreachable.
+     This panel now takes whatever height is left in the column. */
+  flex: 1 1 auto;
+  min-height: 0;
   width: 280px;
-  max-height: calc(100vh - 2rem);
   overflow-y: auto;
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
