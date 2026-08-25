@@ -72,7 +72,13 @@ onMounted(async () => {
   pointer-events: none;
 }
 
-.left-column > * {
+/* Target the two panels by name rather than `> *`. AuthoringPanel is a
+   multi-root component whose FIRST root is the full-viewport authoring
+   overlay canvas, so `> *` also matched that canvas and overrode its own
+   `pointer-events: none` -- putting an invisible sheet over the entire sky
+   that swallowed every click, drag and wheel event the engine needed. */
+.left-column > .culture-panel,
+.left-column > .authoring-panel {
   pointer-events: auto;
 }
 
