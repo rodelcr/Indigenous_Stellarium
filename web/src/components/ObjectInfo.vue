@@ -16,6 +16,11 @@ import {
   chooseNames, catalogueDesignations, formatMagnitude, formatDistance,
   formatAngularSize, formatPhase, formatType,
 } from '../objectInfo.js';
+import {
+  readStarModelData, temperatureFromBV, formatTemperature, colourFromBV,
+  parseSpectralType, describeMultiplicity, formatDsoDimensions,
+  BV_TEMPERATURE_SOURCE,
+} from '../starPhysical.js';
 
 const selection = ref(null);
 let unsubscribe = null;
@@ -58,6 +63,43 @@ const catalogue = computed(() =>
   selection.value ? catalogueDesignations(selection.value.designations) : []
 );
 
+// --- pedagogical layer -----------------------------------------------
+// Each of these is null whenever the catalogue does not carry the input.
+// Nothing here fills a gap with a plausible value.
+
+const model = computed(() =>
+  selection.value ? readStarModelData(selection.value.jsonData) : {}
+);
+
+const colour = computed(() => colourFromBV(model.value.bv));
+
+const temperature = computed(() =>
+  formatTemperature(temperatureFromBV(model.value.bv))
+);
+
+const spectral = computed(() => parseSpectralType(model.value.spectralType));
+
+const multiplicity = computed(() =>
+  selection.value ? describeMultiplicity(selection.value.type) : null
+);
+
+const dsoSize = computed(() => formatDsoDimensions(model.value.dimX, model.value.dimY));
+
+const morphology = computed(() => model.value.morphology);
+
+/** One plain sentence describing the star's class, built only from parts the
+ *  catalogue supplied. Reads as teaching rather than a data dump. */
+const spectralSentence = computed(() => {
+  const s = spectral.value;
+  if (!s) return null;
+  const bits = [];
+  if (s.classDescription) bits.push(s.classDescription);
+  if (s.luminosityDescription) bits.push(s.luminosityDescription);
+  return bits.length ? bits.join(', ') : null;
+});
+
+const temperatureSource = BV_TEMPERATURE_SOURCE;
+
 // Cultural names beyond the one used as the primary title — a star can carry
 // several in one culture, and dropping them would quietly privilege the first.
 const otherCulturalNames = computed(() => {
@@ -79,7 +121,15 @@ const hasAnything = computed(() => !!(selection.value && names.value.primary));
     <p v-if="names.secondary" class="secondary">{{ names.secondary }}</p>
     <p v-if="typeLabel" class="type">{{ typeLabel }}</p>
 
-    <dl v-if="magnitude || distance || angularSize || phase" class="facts">
+    <p v-if="colour" class="colour">
+      <span class="swatch" :style="{ background: colour.swatch }" aria-hidden="true"></span>
+      {{ colour.name }}
+      <span v-if="spectral" class="spectral">{{ spectral.raw }}</span>
+    </p>
+    <p v-if="spectralSentence" class="teaching">{{ spectralSentence }}</p>
+    <p v-if="multiplicity" class="teaching">{{ multiplicity.label }}</p>
+
+    <dl v-if="magnitude || distance || angularSize || phase || temperature || dsoSize || morphology" class="facts">
       <template v-if="magnitude">
         <dt>Magnitude</dt><dd>{{ magnitude }}</dd>
       </template>
@@ -92,7 +142,20 @@ const hasAnything = computed(() => !!(selection.value && names.value.primary));
       <template v-if="phase">
         <dt>Phase</dt><dd>{{ phase }}</dd>
       </template>
+      <template v-if="temperature">
+        <dt>Temperature</dt><dd>{{ temperature }}<span class="est">est.</span></dd>
+      </template>
+      <template v-if="dsoSize">
+        <dt>Size</dt><dd>{{ dsoSize }}</dd>
+      </template>
+      <template v-if="morphology">
+        <dt>Morphology</dt><dd>{{ morphology }}</dd>
+      </template>
     </dl>
+
+    <!-- The temperature is derived, not measured. Saying so beside it is the
+         difference between teaching and asserting. -->
+    <p v-if="temperature" class="provenance">{{ temperatureSource }}</p>
 
     <p v-if="otherCulturalNames.length" class="also">
       Also called {{ otherCulturalNames.join(', ') }}
@@ -139,6 +202,35 @@ const hasAnything = computed(() => !!(selection.value && names.value.primary));
   font-family: var(--font-mono);
   font-size: var(--font-size-mono);
   color: var(--text);
+}
+
+.colour { display: flex; align-items: center; gap: 0.4rem; margin: 0.4rem 0 0; }
+
+.swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border: 1px solid var(--panel-border);
+  /* Square, like everything else here. */
+  border-radius: 0;
+  flex: none;
+}
+
+.spectral {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.teaching { margin: 0.25rem 0 0; font-size: 11px; line-height: 1.4; color: var(--text-dim); }
+
+.est { margin-left: 0.3rem; font-family: var(--font-serif); font-size: 10px; color: var(--text-dim); }
+
+.provenance {
+  margin: 0.4rem 0 0;
+  font-size: 10px;
+  line-height: 1.35;
+  color: var(--text-dim);
 }
 
 .also { margin: 0.5rem 0 0; font-size: 11px; line-height: 1.4; color: var(--text-dim); }

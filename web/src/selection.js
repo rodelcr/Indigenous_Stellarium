@@ -155,6 +155,10 @@ export function onObjectSelected(cb) {
       designations: safe(() => obj.designations(), []) || [],
       culturalNames: safe(() => obj.culturalDesignations(), []) || [],
       type: safe(() => obj.type, null),
+      // jsonData carries what the catalogue knows beyond the info enum:
+      // B-V, spectral type and parallax for stars; morphology and axes for
+      // deep-sky objects (stars.c:228-244, dso.c:126-148).
+      jsonData: safe(() => obj.jsonData, null),
       vmag: safe(() => obj.getInfo('vmag')),
       distance: safe(() => obj.getInfo('distance')),
       radius: safe(() => obj.getInfo('radius')),
