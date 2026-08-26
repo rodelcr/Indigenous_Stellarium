@@ -99,6 +99,13 @@
     "label": "North American",
     "children": [
       {
+        "id": "osage",
+        "label": "Osage (Wazhazhe)",
+        "skyculture_id": null,
+        "region": "Osage Nation (Oklahoma; historically Missouri, Arkansas, Kansas)",
+        "placeholder": true
+      },
+      {
         "id": "navajo",
         "label": "Navajo",
         "skyculture_id": "navajo",

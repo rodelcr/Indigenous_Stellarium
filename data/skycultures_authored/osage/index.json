@@ -1,0 +1,73 @@
+{
+  "id": "osage",
+  "region": "Osage Nation (Oklahoma; historically Missouri, Arkansas, Kansas)",
+  "classification": "traditional",
+  "constellations": [
+    {
+      "id": "CON osage Wabaha",
+      "common_name": {
+        "english": "Litter — the Dipper (Great Bear), Ursa Major",
+        "native": "Wa´-ba-ha"
+      }
+    },
+    {
+      "id": "CON osage Tapa",
+      "common_name": {
+        "english": "Deer-head — the Pleiades",
+        "native": "Ṭa-p̣a´"
+      }
+    },
+    {
+      "id": "CON osage TaThabthin",
+      "common_name": {
+        "english": "Three-deer — the three great stars of Orion's Belt",
+        "native": "Ṭa Tha´-bthiⁿ"
+      }
+    },
+    {
+      "id": "CON osage Mikakeukithacin",
+      "common_name": {
+        "english": "Stars-strung-together / Double-star — theta and iota in Orion",
+        "native": "Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ"
+      }
+    }
+  ],
+  "common_names": {
+    "NAME Pleiades": [
+      {
+        "native": "Ṭa-p̣á",
+        "english": "Deer-head"
+      }
+    ],
+    "HIP 26727": [
+      {
+        "native": "Ṭa Tha´-bthiⁿ",
+        "english": "Three-deer (Orion's Belt)"
+      }
+    ],
+    "HIP 26311": [
+      {
+        "native": "Ṭa Tha´-bthiⁿ",
+        "english": "Three-deer (Orion's Belt)"
+      }
+    ],
+    "HIP 25930": [
+      {
+        "native": "Ṭa Tha´-bthiⁿ",
+        "english": "Three-deer (Orion's Belt)"
+      }
+    ],
+    "HIP 32349": [
+      {
+        "native": "Shoⁿ-ge A-ga-k'e e-goⁿ",
+        "english": "Dog-star (Sirius)"
+      }
+    ],
+    "HIP 11767": [
+      {
+        "native": "Mi-ḳa´-ḳ'e Zhu-dse",
+        "english": "Red-star (the Pole star)"
+      }
+    ]
+  }
+}
