@@ -27,7 +27,12 @@
     "'unattributed_surveys' is a THIRD source of content, found the same way",
     "the belarusian sky culture was: web/public/skydata is copied wholesale by",
     "both deploy paths, so anything dropped in there ships. Mirrored HiPS",
-    "surveys land in skydata/surveys/ and would go out unexamined."
+    "surveys land in skydata/surveys/ and would go out unexamined.",
+    "",
+    "'authored_skycultures_published' is an ALLOWLIST of cultures authored",
+    "inside this project (data/skycultures_authored/) that may ship. Authored",
+    "cultures are drafts by default and stay local; one only ships when it is",
+    "named here, so publishing community knowledge is always a deliberate act."
   ],
   "cultures": [
     {
@@ -58,5 +63,9 @@
     "dso",
     "dso2"
   ],
-  "_surveys_note": "Mirrored from data.stellarium.org for local development. NOT shipped: their properties files carry no obs_copyright, no obs_ack and no hips_creator, there is no README or LICENSE alongside them on the server, and nothing in the engine repository records what they were built from. The designations they carry (Messier, NGC, IC) are historical catalogues, but the compiled positions, magnitudes and morphologies are somebody's work and we cannot say whose. Publishing 34.7 MB of it with no credit is the belarusian mistake again. Resolve with upstream before shipping; until then the app falls back to the engine's own bundled dso survey, which ships with it."
+  "_surveys_note": "Mirrored from data.stellarium.org for local development. NOT shipped: their properties files carry no obs_copyright, no obs_ack and no hips_creator, there is no README or LICENSE alongside them on the server, and nothing in the engine repository records what they were built from. The designations they carry (Messier, NGC, IC) are historical catalogues, but the compiled positions, magnitudes and morphologies are somebody's work and we cannot say whose. Publishing 34.7 MB of it with no credit is the belarusian mistake again. Resolve with upstream before shipping; until then the app falls back to the engine's own bundled dso survey, which ships with it.",
+  "authored_skycultures_published": [
+    "osage"
+  ],
+  "_authored_note": "osage: star names and translations from La Flesche 1928 and 1932. The ceremonial recitations (wi'-gi-e) in the same sources are deliberately NOT included, and La Flesche's charts of Wa'-ba-ha and Ta Tha'-bthin are not reproduced. yana_phuyu is NOT listed: it remains a literature-derived draft with open caveats and has not been cleared for publication."
 }

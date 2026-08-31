@@ -101,9 +101,8 @@
       {
         "id": "osage",
         "label": "Osage (Wazhazhe)",
-        "skyculture_id": null,
-        "region": "Osage Nation (Oklahoma; historically Missouri, Arkansas, Kansas)",
-        "placeholder": true
+        "skyculture_id": "osage",
+        "region": "Osage Nation (Oklahoma; historically Missouri, Arkansas, Kansas)"
       },
       {
         "id": "navajo",

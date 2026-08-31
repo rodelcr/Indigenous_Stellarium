@@ -59,6 +59,15 @@ print("\n".join(data.get("unattributed_surveys") or []))
 ' "$_EXCLUSIONS_JSON"
 }
 
+_read_authored_published() {
+  python3 -c '
+import json, sys
+with open(sys.argv[1]) as fh:
+    data = json.load(fh)
+print("\n".join(data.get("authored_skycultures_published") or []))
+' "$_EXCLUSIONS_JSON"
+}
+
 _read_bundled_allowed() {
   python3 -c '
 import json, sys
@@ -132,6 +141,31 @@ assert_no_excluded_cultures() {
     echo "ERROR: refusing to publish — see deploy/exclusions.json." >&2
     return 1
   fi
+  return 0
+}
+
+AUTHORED_PUBLISHED=()
+while IFS= read -r _line; do
+  [[ -n "$_line" ]] && AUTHORED_PUBLISHED+=("$_line")
+done < <(_read_authored_published)
+
+# stage_authored_skycultures <src_dir> <dest_skycultures_dir>
+#
+# Cultures authored inside this project are drafts by default: they live in
+# data/skycultures_authored/ and ship only when named in the manifest's
+# allowlist. Publishing a community's knowledge should require someone to
+# have written its name down, not merely to have left a file on disk.
+stage_authored_skycultures() {
+  local src="$1" dest="$2"
+  local name
+  for name in "${AUTHORED_PUBLISHED[@]}"; do
+    if [[ ! -d "$src/$name" ]]; then
+      echo "ERROR: authored culture '$name' is allowlisted but missing at $src/$name" >&2
+      return 1
+    fi
+    cp -R "$src/$name" "$dest/$name"
+    echo "  publishing authored culture '$name'"
+  done
   return 0
 }
 

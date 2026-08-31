@@ -93,6 +93,8 @@ for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
 done
 
 # --- verification: fail loudly if any excluded culture slipped in ---
+stage_authored_skycultures "$REPO_ROOT/data/skycultures_authored" "$OUT/web/public/skycultures"
+
 assert_no_excluded_cultures "$OUT/web/public/skycultures"
 # Verify the FILTERED taxonomy no longer offers any withheld culture. Built
 # from the manifest rather than hardcoded ids — the previous version listed

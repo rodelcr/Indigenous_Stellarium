@@ -89,6 +89,9 @@ for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   fi
   cp -R "$dir" "$STAGE_PUBLIC/skycultures/$name"
 done
+# Cultures authored inside this project, per the manifest allowlist.
+stage_authored_skycultures "$REPO_ROOT/data/skycultures_authored" "$STAGE_PUBLIC/skycultures"
+
 assert_no_excluded_cultures "$STAGE_PUBLIC/skycultures"
 
 # --- 3. taxonomy filtered to match what is shipped --------------------
