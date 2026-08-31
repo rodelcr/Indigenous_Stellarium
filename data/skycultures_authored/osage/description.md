@@ -21,11 +21,16 @@ star vocabulary.
 it, or describe a figure seen in the sky.
 
 Where a name and a star are given together in the sources, both are recorded
-below. Where the sources name a figure but do not describe its shape, the
-member stars are named and **no outline is drawn** — La Flesche's own charts
-of two of these figures are not reproduced here, and guessing at a shape he
-had already recorded would be an invention on top of a source that did not
-need one.
+below. Where the sources name a figure but do not describe its shape, **no
+outline is drawn** — La Flesche's own charts of two of these figures are not
+reproduced here, and guessing at a shape he had already recorded would be an
+invention on top of a source that did not need one.
+
+A figure's name belongs to the figure, not to each of its stars. Ṭa Tha´-bthiⁿ
+is the name of the three belt stars together, not the name of any one of
+them, so it is recorded once against the group. Only names the sources give
+to a single star or cluster — Red-star, the Dog-star, Deer-head — are
+attached to that object.
 
 ## Constellations
 
@@ -36,10 +41,25 @@ The three great stars that form Orion's Belt: ζ, ε and δ Orionis
 ##### Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ — Stars-strung-together, or Double-star
 Given in the sources as theta and iota in Orion.
 
-##### Wa´-ba-ha — Litter
-Also glossed "the stretcher". Identified as the Dipper, the Great Bear
-(Ursa Major). The dictionary notes that this constellation "is frequently
-referred to in ceremonial rituals by the Osage."
+##### Wa´-ba-ha — Litter, the stretcher
+Identified as the Dipper. The dictionary notes that this constellation "is
+frequently referred to in ceremonial rituals by the Osage."
+
+La Flesche glosses this figure four times and not identically. Twice he
+gives the Dipper alone — "Wa´-ba-ha, Litter (the Dipper)" in the Ṭsi´-zhu
+Wa-shta-ge list, and "the stretcher; the Great Dipper" in the dictionary
+headword. Twice he adds the Great Bear — "Litter, the Dipper (Great Bear)"
+in the Ṭsi´-zhu Wa-noⁿ list, and under the Ṭa-p̣a´ entry, where the Pleiades
+"is paired with the Great Bear, called (Wa'-ba-ha by both Osage and Omaha)".
+The chart caption reads "Chart of constellation Wa´-ba-ha (Ursa Major)".
+
+Recorded here as the Dipper, with Great Bear and Ursa Major noted as
+alternatives La Flesche also uses, rather than merged into one name. The
+distinction is not cosmetic: the Dipper is seven stars, Ursa Major is a far
+larger constellation, and the only thing that would fix the extent of
+Wa´-ba-ha is the chart — which is not reproduced here.
+
+### Named stars and clusters
 
 ##### Ṭa-p̣a´ — Deer-head
 The Pleiades. A subgens of the Hoⁿ Zho´-i-ga-the gens carries the name

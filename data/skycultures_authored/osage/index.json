@@ -6,7 +6,7 @@
     {
       "id": "CON osage TaThabthin",
       "common_name": {
-        "english": "Three-deer — Orion's Belt",
+        "english": "Three-deer",
         "native": "Ṭa Tha´-bthiⁿ"
       },
       "lines": [
@@ -20,7 +20,7 @@
     {
       "id": "CON osage Mikakeukithacin",
       "common_name": {
-        "english": "Stars-strung-together / Double-star — theta and iota in Orion",
+        "english": "Stars-strung-together / Double-star",
         "native": "Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ"
       },
       "lines": [
@@ -33,107 +33,28 @@
     {
       "id": "CON osage Wabaha",
       "common_name": {
-        "english": "Litter — the Dipper (Great Bear)",
+        "english": "Litter, the stretcher — the Dipper",
         "native": "Wa´-ba-ha"
-      }
-    },
-    {
-      "id": "CON osage Tapa",
-      "common_name": {
-        "english": "Deer-head — the Pleiades",
-        "native": "Ṭa-p̣a´"
       }
     }
   ],
   "common_names": {
-    "HIP 54061": [
-      {
-        "native": "Wa´-ba-ha",
-        "english": "Litter — the Dipper (Great Bear)"
-      }
-    ],
-    "HIP 53910": [
-      {
-        "native": "Wa´-ba-ha",
-        "english": "Litter — the Dipper (Great Bear)"
-      }
-    ],
-    "HIP 58001": [
-      {
-        "native": "Wa´-ba-ha",
-        "english": "Litter — the Dipper (Great Bear)"
-      }
-    ],
-    "HIP 59774": [
-      {
-        "native": "Wa´-ba-ha",
-        "english": "Litter — the Dipper (Great Bear)"
-      }
-    ],
-    "HIP 62956": [
-      {
-        "native": "Wa´-ba-ha",
-        "english": "Litter — the Dipper (Great Bear)"
-      }
-    ],
-    "HIP 65378": [
-      {
-        "native": "Wa´-ba-ha",
-        "english": "Litter — the Dipper (Great Bear)"
-      }
-    ],
-    "HIP 67301": [
-      {
-        "native": "Wa´-ba-ha",
-        "english": "Litter — the Dipper (Great Bear)"
-      }
-    ],
-    "HIP 17702": [
+    "NAME Pleiades": [
       {
         "native": "Ṭa-p̣a´",
-        "english": "Deer-head — the Pleiades"
-      }
-    ],
-    "HIP 26727": [
-      {
-        "native": "Ṭa Tha´-bthiⁿ",
-        "english": "Three-deer — Orion's Belt"
-      }
-    ],
-    "HIP 26311": [
-      {
-        "native": "Ṭa Tha´-bthiⁿ",
-        "english": "Three-deer — Orion's Belt"
-      }
-    ],
-    "HIP 25930": [
-      {
-        "native": "Ṭa Tha´-bthiⁿ",
-        "english": "Three-deer — Orion's Belt"
-      }
-    ],
-    "HIP 26221": [
-      {
-        "native": "Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ",
-        "english": "Stars-strung-together / Double-star"
-      }
-    ],
-    "HIP 26241": [
-      {
-        "native": "Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ",
-        "english": "Stars-strung-together / Double-star"
+        "english": "Deer-head"
       }
     ],
     "HIP 11767": [
       {
         "native": "Mi-ḳa´-ḳ'e Zhu-dse",
-        "english": "Red-star — the Pole star"
+        "english": "Red-star"
       }
     ],
     "HIP 32349": [
       {
         "native": "Shoⁿ´-ge a-ga-ḳ'e e-goⁿ",
-        "english": "Dog that lies suspended in the sky — the Dog-star"
+        "english": "Dog that lies suspended in the sky"
       }
     ]
   }

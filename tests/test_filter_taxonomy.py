@@ -215,3 +215,80 @@ class TestBundledSkycultureAllowlist:
             assert "prune_bundled_skycultures" in text, (
                 f"deploy/{script} copies skydata but never prunes it"
             )
+
+
+class TestAuthoredCultureShape:
+    """A culture authored in this project must follow the same conventions as
+    the fetched ones. Both rules below were broken on first publish and found
+    by Rodrigo, not by any test."""
+
+    def _osage(self):
+        return json.loads(
+            (REPO_ROOT / "data" / "skycultures_authored" / "osage" / "index.json")
+            .read_text(encoding="utf-8")
+        )
+
+    def test_constellation_names_are_not_repeated_onto_member_stars(self):
+        """common_names holds names of INDIVIDUAL stars and clusters. Putting a
+        figure's name there once per member prints that name across the sky on
+        every star — no fetched culture in this repository does that, and the
+        first Osage draft did it on all fifteen."""
+        d = self._osage()
+        star_names = {
+            e.get("native") or e.get("english")
+            for v in d.get("common_names", {}).values()
+            for e in v
+        }
+        con_names = {
+            c["common_name"].get("native") or c["common_name"].get("english")
+            for c in d.get("constellations", [])
+            if c.get("common_name")
+        }
+        overlap = star_names & con_names
+        assert not overlap, f"constellation names leaked into common_names: {sorted(overlap)}"
+
+    def test_the_pleiades_uses_the_conventional_key(self):
+        """anutan, blackfoot, boorong and tongan all name the cluster with
+        'NAME Pleiades'. Naming Alcyone instead labels one star with the
+        cluster's name."""
+        d = self._osage()
+        keys = set(d.get("common_names", {}))
+        assert "NAME Pleiades" in keys or not any(
+            "Pleiad" in (e.get("english") or "")
+            for v in d["common_names"].values() for e in v
+        ), "the Pleiades must be keyed as 'NAME Pleiades', not by a member star"
+
+    def test_no_culture_names_every_member_of_a_figure_after_the_figure(self):
+        """The measured convention, not an assumed one.
+
+        A figure's name MAY also name a star -- Boorong does this for many
+        figures, giving the name to the principal star. What no culture does
+        is put the figure's name on ALL of its members, which prints that name
+        across the sky once per star. Measured across every fetched culture,
+        the largest share of a multi-star figure's own members carrying its
+        name is 1 of 5 (boorong: War). The first Osage draft was 3 of 3 and
+        7 of 7.
+        """
+        base = REPO_ROOT / "web" / "public" / "skycultures"
+        dirs = list(base.glob("*/index.json")) if base.is_dir() else []
+        dirs.append(REPO_ROOT / "data" / "skycultures_authored" / "osage" / "index.json")
+        for idx in sorted(d for d in dirs if d.is_file()):
+            d = json.loads(idx.read_text(encoding="utf-8"))
+            by_name = {}
+            for k, v in (d.get("common_names") or {}).items():
+                for e in v:
+                    by_name.setdefault(e.get("native") or e.get("english"), set()).add(k)
+            for c in d.get("constellations") or []:
+                cname = c.get("common_name") or {}
+                n = cname.get("native") or cname.get("english")
+                if n not in by_name:
+                    continue
+                stars = {h for seg in (c.get("lines") or []) for h in seg if isinstance(h, int)}
+                if len(stars) < 2:
+                    continue  # a one-star figure sharing its star's name is fine
+                named = {int(k.split()[1]) for k in by_name[n] if k.startswith("HIP ")}
+                share = len(named & stars) / len(stars)
+                assert share < 0.5, (
+                    f"{idx.parent.name}: {n!r} names {len(named & stars)} of its "
+                    f"{len(stars)} member stars after the figure itself"
+                )

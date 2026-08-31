@@ -163,7 +163,19 @@ stage_authored_skycultures() {
       echo "ERROR: authored culture '$name' is allowlisted but missing at $src/$name" >&2
       return 1
     fi
+    # rm first: `cp -R src dest/name` copies INTO dest/name when it already
+    # exists, producing dest/name/name and leaving whatever was there in
+    # place. That shipped a stale copy of a culture once, silently — the
+    # authored source is authoritative, so replace rather than merge.
+    if [[ -e "$dest/$name" ]]; then
+      echo "  (replacing an existing '$name' directory with the authored copy)"
+      rm -rf "${dest:?}/$name"
+    fi
     cp -R "$src/$name" "$dest/$name"
+    if [[ -e "$dest/$name/$name" ]]; then
+      echo "ERROR: nested '$name/$name' after staging — copy did not replace." >&2
+      return 1
+    fi
     echo "  publishing authored culture '$name'"
   done
   return 0
