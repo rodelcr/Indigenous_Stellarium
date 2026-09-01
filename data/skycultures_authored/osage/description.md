@@ -34,41 +34,18 @@ attached to that object.
 
 ## Constellations
 
-##### Ṭa Tha´-bthiⁿ — Three-deer
-The three great stars that form Orion's Belt: ζ, ε and δ Orionis
-(Alnitak, Alnilam, Mintaka).
+Two columns matter here and they are not the same thing. **What the name
+means** is Osage. **Where it is** is La Flesche telling his readers which
+part of the Western sky he is pointing at — a cross-reference for an English
+audience, not part of the Osage name. They are kept apart below, and only the
+meaning is used as the figure's name in the data.
 
-##### Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ — Stars-strung-together, or Double-star
-Given in the sources as theta and iota in Orion.
-
-##### Wa´-ba-ha — Litter, the stretcher
-Identified as the Dipper. The dictionary notes that this constellation "is
-frequently referred to in ceremonial rituals by the Osage."
-
-La Flesche glosses this figure four times and not identically. Twice he
-gives the Dipper alone — "Wa´-ba-ha, Litter (the Dipper)" in the Ṭsi´-zhu
-Wa-shta-ge list, and "the stretcher; the Great Dipper" in the dictionary
-headword. Twice he adds the Great Bear — "Litter, the Dipper (Great Bear)"
-in the Ṭsi´-zhu Wa-noⁿ list, and under the Ṭa-p̣a´ entry, where the Pleiades
-"is paired with the Great Bear, called (Wa'-ba-ha by both Osage and Omaha)".
-The chart caption reads "Chart of constellation Wa´-ba-ha (Ursa Major)".
-
-Recorded here as the Dipper, with Great Bear and Ursa Major noted as
-alternatives La Flesche also uses, rather than merged into one name. The
-distinction is not cosmetic: the Dipper is seven stars, Ursa Major is a far
-larger constellation, and the only thing that would fix the extent of
-Wa´-ba-ha is the chart — which is not reproduced here.
-
-### Named stars and clusters
-
-##### Ṭa-p̣a´ — Deer-head
-The Pleiades. A subgens of the Hoⁿ Zho´-i-ga-the gens carries the name
-Ṭa-p̣a´ Zho-i-ga-the, "Deer-head or Pleiades People".
-
-### Single stars
-
-| Osage | Translation | Identified as |
+| Osage | What the name means | Where La Flesche says it is |
 |---|---|---|
+| Wa´-ba-ha | Litter, the stretcher | the Dipper; also given as the Great Bear, and the chart is captioned Ursa Major |
+| Ṭa-p̣a´ | Deer-head | the Pleiades |
+| Ṭa Tha´-bthiⁿ | Three-deer | the three great stars of Orion's Belt |
+| Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ | Stars-strung-together, or Double-star | theta and iota in Orion |
 | Mi-ḳa´-ḳ'e Zhu-dse | Red-star | the Pole star |
 | Shoⁿ´-ge a-ga-ḳ'e e-goⁿ | Dog that lies suspended in the sky | Sirius, in Canis Major |
 | Mi-ḳa´-ḳ'e Hoⁿ-baⁿ doⁿ | Day-star | the morning star |
@@ -80,25 +57,39 @@ The Pleiades. A subgens of the Hoⁿ Zho´-i-ga-the gens carries the name
 | Wa-ḳoⁿ´-da Hoⁿ´-ba doⁿ | God of Day | the Sun |
 | Wa-ḳoⁿ´-da Hoⁿ doⁿ | Goddess of Night | the Moon |
 
-The morning and evening stars are recorded by that description in the
-sources; no planet is named, and none is assumed here.
+Wa´-ba-ha is the Litter. That "the Dipper", "the Great Bear" and "Ursa Major"
+all appear against it in the sources is La Flesche naming the same region for
+Western readers in three ways; it is not the Osage figure having three names.
 
-Two terms are both glossed as the Pole star — `Mi-ḳa´-ḳ'e Zhu-dse` and
-`Mi-ḳa´-ḳ'e moⁿ-thiⁿ a-zhi`. Recorded as found rather than reconciled.
+The dictionary notes that Wa´-ba-ha "is frequently referred to in ceremonial
+rituals by the Osage". A subgens of the Hoⁿ Zho´-i-ga-the gens carries the
+name Ṭa-p̣a´ Zho-i-ga-the, "Deer-head or Pleiades People".
+
+The morning and evening stars are named as such in the sources; no planet is
+identified, and none is assumed here. Two different terms are both pointed at
+the Pole star — recorded as found rather than reconciled.
 
 ### Other star words
 
-| Osage | Translation |
+| Osage | What it means |
 |---|---|
 | Mi-ḳa´-ḳ'e | star |
-| Mi-ḳa´-ḳ'e siⁿ-dse stse-dse | long-tailed star; a comet |
-| Mi-ḳa´-ḳ'e u-xpa-the | falling star; a meteor |
-| Mi-ḳa´-ḳ'e u-zhoⁿ-ge | the path of a star; an orbit |
+| Mi-ḳa´-ḳ'e siⁿ-dse stse-dse | long-tailed star — a comet |
+| Mi-ḳa´-ḳ'e u-xpa-the | falling star — a meteor |
+| Mi-ḳa´-ḳ'e u-zhoⁿ-ge | the path of a star — an orbit |
 | Mi-ḳa´-ḳ'e-wa-gpe | the inactive star |
 | Mi-ḳa´-ḳ'e-zhiⁿ-ga | Little-star (a personal name) |
 
 Of the falling star the dictionary notes: "The year 1833 was known as the
 year of falling stars."
+
+### Which figures are drawn
+
+Lines are drawn only where the sources state which stars make up the figure:
+Ṭa Tha´-bthiⁿ (the three belt stars) and Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ (theta and
+iota, and the name is itself the line). Wa´-ba-ha is not drawn: knowing the
+region is the Dipper does not tell us the shape of a litter, and the one
+source that would — La Flesche's chart — is not reproduced here.
 
 ## References
 
