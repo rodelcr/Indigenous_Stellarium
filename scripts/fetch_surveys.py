@@ -45,8 +45,14 @@ def fetch(url: str) -> bytes | None:
 
 
 def mirror(survey: str, dest: Path, max_order: int = 3, dry_run: bool = False,
-           ext: str = "eph") -> tuple[int, int]:
-    """Copy `survey` into dest/<survey>/. Returns (tiles, bytes)."""
+           ext: str = "eph", min_order: int = 0) -> tuple[int, int]:
+    """Copy `survey` into dest/<survey>/. Returns (tiles, bytes).
+
+    `min_order` matters for surveys that do not start at 0. Gaia's
+    hips_order_min is 3, so orders 0-2 are entirely absent; without this the
+    empty-order break below would stop the walk at order 1 and mirror
+    nothing at all.
+    """
     out = dest / survey
     if not dry_run:
         out.mkdir(parents=True, exist_ok=True)
@@ -58,7 +64,7 @@ def mirror(survey: str, dest: Path, max_order: int = 3, dry_run: bool = False,
         (out / "properties").write_bytes(props)
 
     tiles = total = 0
-    for order in range(0, max_order + 1):
+    for order in range(min_order, max_order + 1):
         n_pix = 12 * (4 ** order)
         found_this_order = 0
         for pix in range(n_pix):
@@ -79,7 +85,7 @@ def mirror(survey: str, dest: Path, max_order: int = 3, dry_run: bool = False,
               file=sys.stderr)
         # A whole empty order means the survey stops here; deeper probing
         # would be thousands of pointless 404s.
-        if found_this_order == 0 and order > 0:
+        if found_this_order == 0 and order > min_order:
             break
     return tiles, total
 
@@ -89,13 +95,16 @@ def main(argv: list[str]) -> int:
     ap.add_argument("surveys", nargs="+")
     ap.add_argument("--dest", default="web/public/skydata/surveys")
     ap.add_argument("--max-order", type=int, default=3)
+    ap.add_argument("--min-order", type=int, default=0,
+                    help="first order to walk; Gaia's survey starts at 3")
     ap.add_argument("--ext", default="eph")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args(argv[1:])
 
     grand = 0
     for s in args.surveys:
-        tiles, size = mirror(s, Path(args.dest), args.max_order, args.dry_run, args.ext)
+        tiles, size = mirror(s, Path(args.dest), args.max_order, args.dry_run,
+                             args.ext, args.min_order)
         grand += size
         print(f"fetch_surveys: {s}: {tiles} tiles, {size/1024/1024:.1f} MB")
     print(f"fetch_surveys: total {grand/1024/1024:.1f} MB")
