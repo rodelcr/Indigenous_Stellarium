@@ -1,0 +1,96 @@
+{
+  "cultures": [
+    {
+      "id": "anutan",
+      "title": "Anutan",
+      "authors_md": "This sky culture was contributed by _Doina Bucur_ (d.bucur@utwente.nl). It was digitised for the cross-culture analysis of constellation line figures in reference [#2], `The network signature of constellation line figures`. An earlier version was contributed to the desktop version of Stellarium by _Dan Smale_ (d.smale(at)niwa.co.nz).",
+      "license_md": "CC BY-SA"
+    },
+    {
+      "id": "aztec",
+      "title": "Aztec",
+      "authors_md": "[Enrique Gómez Candelario](mailto:aldeaglobal@gmail.com)\n\nEnglish translation by Rafael Rojas Segoviano\n\nRework by Stellarium's team.\n\n### Thanks\n\n - Javier Gómez Sandoval\n - Martha Patricia Rivera\n - Emilio Ramón Bolaños Guerra\n - Hector Vega\n - Rafael Rojas Segoviano\n - Juan Caballero\n - SAAGS",
+      "license_md": "GNU GPL v2.0"
+    },
+    {
+      "id": "blackfoot",
+      "title": "Blackfoot",
+      "authors_md": "This sky culture was contributed by _Doina Bucur_ (d.bucur@utwente.nl). It was digitised for the cross-culture analysis of constellation line figures in reference [#4], `The network signature of constellation line figures`.",
+      "license_md": "CC BY-SA"
+    },
+    {
+      "id": "boorong",
+      "title": "Boorong",
+      "authors_md": "This sky culture was contributed by John Morieson and [Alex\nCherney](http://www.terrastro.com).\n\nTechnical rework by Susanne M Hoffmann",
+      "license_md": "Data and illustrations: CC-BY SA"
+    },
+    {
+      "id": "hawaiian_starlines",
+      "title": "Hawaiian",
+      "authors_md": "This sky culture was contributed in 2017 by teachers Darren Kamalu and\nChristopher Blake, Students Jonah Apo, Nicholas Koanui, Brenden Aila and the\nCelestial Navigation class at Kamehameha Schools Kapalama, Honolulu, Hawai’i.\n\nArtwork by Kealoha Kaneakua.\n\nReworked by Susanne M Hoffmann.",
+      "license_md": "CC BY-SA"
+    },
+    {
+      "id": "inuit",
+      "title": "Inuit",
+      "authors_md": "This sky culture was contributed by _Karrie Berglund_ of Digitalis Education\nSolutions, Inc. based primarily on the book __The Arctic Sky: Inuit Astronomy,\nStar Lore and Legend__ by John MacDonald.\n\nIllustrations by Johan Meuris.\n\nEdited by Susanne M Hoffmann and the Stellarium's team.",
+      "license_md": "Text and data: GNU GPL v2.0\n\nIllustrations: Free Art License"
+    },
+    {
+      "id": "maori",
+      "title": "Maori",
+      "authors_md": "This sky culture is a contribution of Stellarium user [Dan\nSmale](mailto:d.smale@niwa.co.nz)",
+      "license_md": "Text and lines: CC BY-SA"
+    },
+    {
+      "id": "navajo",
+      "title": "Navajo",
+      "authors_md": "This sky culture was contributed by _Karrie Berglund_ of Digitalis Education\nSolutions, Inc. based primarily on the book __Star Trails-Navajo__ by Don\nChildrey.",
+      "license_md": "GNU GPL v2.0"
+    },
+    {
+      "id": "northern_andes",
+      "title": "Northern Andes",
+      "authors_md": "Andres Ayala Quinatoa\n\nreworked by Susanne M Hoffmann",
+      "license_md": "GNU GPL v2.0"
+    },
+    {
+      "id": "osage",
+      "title": "Osage (Wazhazhe)",
+      "authors_md": "The knowledge is Osage. It was recorded by Francis La Flesche (Omaha,\n1857–1932) from Osage authorities named in the source — Shoⁿ´-ge-moⁿ-iⁿ of\nthe Ṭsi´-zhu Wa-shta-ge gens and Xu´-tha-wa-ṭoⁿ-iⁿ of the Ṭsi´-zhu Wa-noⁿ\ngens — and published by the Bureau of American Ethnology. Compiled for this\nproject from the two volumes above.",
+      "license_md": "Text and data: to be determined by the Osage Nation. No terms are asserted\nhere on their behalf.\n\nThe sources are out of copyright, which is a fact about copyright and not a\ngrant of permission. Published here are star names and their translations;\nthe ceremonial recitations in the same sources are deliberately not\nincluded, and La Flesche's charts of Wa´-ba-ha and Ṭa Tha´-bthiⁿ are not\nreproduced."
+    },
+    {
+      "id": "tongan",
+      "title": "Tongan",
+      "authors_md": "This sky culture was contributed by Stellarium user [Dan\nSmale](d.smale@niwa.co.nz)\n\nTechnical adaption: Susanne M Hoffmann",
+      "license_md": "CC BY-SA"
+    },
+    {
+      "id": "tukano",
+      "title": "Tukano",
+      "authors_md": "[Walmir Thomazi Cardoso](mailto:walmir.astronomia@gmail.com) gathered this\ninformation in a survey that is part of his PhD. Thesis of Ethnomathematics.\n\nIllustrations were made by Antonio Gumercindo Taques dos Santos (Ticão) and\n[Youssif Ganthous Filho](mailto:youssif@gmail.com).\n\nTechnical adaption: Stellarium's team",
+      "license_md": "Text, lines and illustrations: CC BY-SA"
+    },
+    {
+      "id": "tupi",
+      "title": "Tupi-Guarani",
+      "authors_md": "This sky culture was contributed by Stellarium user _Paulo Marcelo Pontes_.",
+      "license_md": "GNU GPL v2.0"
+    },
+    {
+      "id": "western",
+      "title": "Western",
+      "authors_md": "Stellarium's team.\n\nIllustrations by Johan Meuris.",
+      "license_md": "Text and data: CC BY-SA\n\nIllustrations: Free Art License"
+    }
+  ],
+  "surveys": [
+    {
+      "id": "milkyway",
+      "type": "image",
+      "credited": false,
+      "obs_title": "milkyway"
+    }
+  ]
+}

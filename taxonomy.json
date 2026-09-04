@@ -1,0 +1,173 @@
+[
+  {
+    "id": "polynesian",
+    "label": "Polynesian",
+    "children": [
+      {
+        "id": "hawaiian_starlines",
+        "label": "Hawaiʻi",
+        "skyculture_id": "hawaiian_starlines",
+        "region": "Hawaiian Islands"
+      },
+      {
+        "id": "maori",
+        "label": "Aotearoa / Māori",
+        "skyculture_id": "maori",
+        "region": "Aotearoa (New Zealand)"
+      },
+      {
+        "id": "tongan",
+        "label": "Tonga",
+        "skyculture_id": "tongan",
+        "region": "Kingdom of Tonga"
+      },
+      {
+        "id": "anutan",
+        "label": "Anuta",
+        "skyculture_id": "anutan",
+        "region": "Anuta, Solomon Islands"
+      },
+      {
+        "id": "rapa_nui",
+        "label": "Rapa Nui",
+        "skyculture_id": null,
+        "region": "Rapa Nui (Easter Island)",
+        "placeholder": true
+      }
+    ]
+  },
+  {
+    "id": "south_american",
+    "label": "South American",
+    "children": [
+      {
+        "id": "tukano",
+        "label": "Tukano",
+        "skyculture_id": "tukano",
+        "region": "Amazonas, Brazil (Rio Tiquié)"
+      },
+      {
+        "id": "tupi",
+        "label": "Tupi",
+        "skyculture_id": "tupi",
+        "region": "Brazil"
+      },
+      {
+        "id": "lokono",
+        "label": "Lokono",
+        "skyculture_id": null,
+        "region": "The Guianas (Guyana, Suriname, French Guiana)",
+        "excluded": true,
+        "exclusion_reason": "Not shown in this deployment. Its licence (CC BY-NC) grants redistribution permission to Stellarium Labs specifically, and this project is not that party. The data exists and is published upstream — we lack permission to republish it here."
+      },
+      {
+        "id": "northern_andes",
+        "label": "Northern Andes",
+        "skyculture_id": "northern_andes",
+        "region": "Imbabura, Ecuador (Northern Andes)"
+      },
+      {
+        "id": "mapuche",
+        "label": "Mapuche",
+        "skyculture_id": null,
+        "region": "Araucanía, Chile / Argentina",
+        "placeholder": true
+      },
+      {
+        "id": "diaguita",
+        "label": "Diaguita",
+        "skyculture_id": null,
+        "region": "Northwest Argentina / Chile",
+        "placeholder": true
+      },
+      {
+        "id": "quechua",
+        "label": "Quechua",
+        "skyculture_id": null,
+        "region": "Andes (Peru, Bolivia, Ecuador)",
+        "placeholder": true
+      },
+      {
+        "id": "yana_phuyu",
+        "label": "Yana Phuyu (dark clouds)",
+        "skyculture_id": null,
+        "region": "Southern Peruvian Andes (Cusco region)",
+        "placeholder": true
+      }
+    ]
+  },
+  {
+    "id": "north_american",
+    "label": "North American",
+    "children": [
+      {
+        "id": "osage",
+        "label": "Osage (Wazhazhe)",
+        "skyculture_id": "osage",
+        "region": "Osage Nation (Oklahoma; historically Missouri, Arkansas, Kansas)"
+      },
+      {
+        "id": "navajo",
+        "label": "Navajo",
+        "skyculture_id": "navajo",
+        "region": "Navajo Nation (Arizona, Utah, New Mexico, US)"
+      },
+      {
+        "id": "blackfoot",
+        "label": "Blackfoot",
+        "skyculture_id": "blackfoot",
+        "region": "Northern Great Plains, North America"
+      },
+      {
+        "id": "inuit",
+        "label": "Inuit",
+        "skyculture_id": "inuit",
+        "region": "Arctic (Canada, Greenland)"
+      }
+    ]
+  },
+  {
+    "id": "australian",
+    "label": "Australian",
+    "children": [
+      {
+        "id": "kamilaroi",
+        "label": "Kamilaroi",
+        "skyculture_id": null,
+        "region": "New South Wales, Australia",
+        "excluded": true,
+        "exclusion_reason": "Not shown in this deployment. Its licence (CC BY-NC-ND 4.0) grants redistribution permission to the Stellarium developers specifically, and this project is not that party. The data exists and is published upstream — we lack permission to republish it here."
+      },
+      {
+        "id": "boorong",
+        "label": "Boorong",
+        "skyculture_id": "boorong",
+        "region": "Victoria, Australia"
+      }
+    ]
+  },
+  {
+    "id": "mesoamerican",
+    "label": "Mesoamerican",
+    "children": [
+      {
+        "id": "aztec",
+        "label": "Aztec",
+        "skyculture_id": "aztec",
+        "region": "Central Mexico"
+      }
+    ]
+  },
+  {
+    "id": "western",
+    "label": "Western",
+    "children": [
+      {
+        "id": "western",
+        "label": "IAU",
+        "skyculture_id": "western",
+        "region": "International (Western/IAU tradition)"
+      }
+    ]
+  }
+]
