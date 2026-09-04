@@ -49,6 +49,7 @@ const isStatic = DEPLOY_KIND === 'static';
 
 const open = ref(false);
 const cultures = ref([]);
+const surveys = ref([]);
 const loadError = ref(null);
 
 onMounted(async () => {
@@ -56,7 +57,18 @@ onMounted(async () => {
     const url = assetUrl('/attribution.json');
     const res = await fetch(url);
     if (!res.ok) throw new Error(`Failed to fetch ${url}: ${res.status}`);
-    cultures.value = await res.json();
+    const data = await res.json();
+    // Was a bare array of cultures before survey credit existed; accept both
+    // so an older cached file does not blank the panel.
+    if (Array.isArray(data)) {
+      cultures.value = data;
+      surveys.value = [];
+    } else {
+      cultures.value = data.cultures || [];
+      // Only surveys that actually name someone. One that states no credit
+      // is withheld from the deploy, so it should not appear here either.
+      surveys.value = (data.surveys || []).filter((s) => s.credited);
+    }
   } catch (err) {
     // Non-fatal: the always-visible badge and AGPL link below don't
     // depend on this fetch succeeding. Only the per-culture attribution
@@ -132,6 +144,21 @@ onMounted(async () => {
           }}</a
           >.
         </p>
+      </section>
+
+      <section v-if="surveys.length" class="info-section">
+        <h2 class="info-heading">Sky survey data</h2>
+        <p class="info-note">
+          Star and image surveys rendered by the engine. Mirrored rather than
+          streamed from someone else's server, and shown here because these
+          acknowledgements are required by the people who produced the data.
+        </p>
+        <div v-for="s in surveys" :key="s.id" class="culture-attribution">
+          <h3 class="culture-title">{{ s.obs_title || s.id }}</h3>
+          <p v-if="s.hips_creator" class="culture-authors">{{ s.hips_creator }}</p>
+          <p v-if="s.obs_copyright" class="culture-authors">{{ s.obs_copyright }}</p>
+          <p v-if="s.obs_ack" class="culture-license">{{ s.obs_ack }}</p>
+        </div>
       </section>
 
       <section class="info-section">

@@ -70,7 +70,7 @@ cp "$REPO_ROOT/web/public/cities.json" "$OUT/web/public/cities.json"
 # Same hole as the static path had: the engine's demo data carries sky
 # cultures of its own, copied wholesale above. See deploy/exclusions.json.
 prune_bundled_skycultures "$OUT/web/public/skydata"
-prune_unattributed_surveys "$OUT/web/public/skydata"
+prune_withheld_surveys "$OUT/web/public/skydata"
 # Excluding a culture's DIRECTORY is only half the job: a tree node still
 # carrying its skyculture_id renders as a clickable culture that 404s and
 # silently shows nothing. This path used to bare-copy the taxonomy while

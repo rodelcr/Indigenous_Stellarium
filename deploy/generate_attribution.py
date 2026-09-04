@@ -116,22 +116,96 @@ def build_attribution(skycultures_dir: Path) -> list[dict[str, Any]]:
     return records
 
 
+# HiPS `properties` fields that carry credit, in the order a reader should
+# see them. Names per the IVOA HiPS standard; verified present on
+# data.stellarium.org's own surveys (gaia_dr2_v2 carries obs_copyright and
+# obs_ack, dss carries obs_copyright, obs_copyright_url and hips_creator).
+SURVEY_CREDIT_FIELDS = ("obs_title", "hips_creator", "obs_copyright",
+                        "obs_copyright_url", "obs_ack")
+
+
+def parse_survey_properties(text: str) -> dict[str, str]:
+    """Parse a HiPS properties file into a dict.
+
+    Format is `key = value` with values that may contain '='; split on the
+    first only. Comment lines start with '#'.
+    """
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        out[key.strip()] = value.strip()
+    return out
+
+
+def build_survey_attribution(skydata_dir: Path) -> list[dict[str, Any]]:
+    """Credit for every HiPS survey being shipped.
+
+    The Gaia survey's obs_ack is a specific text ESA requires of anyone using
+    the data; shipping the survey without displaying it would not meet that.
+    Surveys stating no credit at all are reported with `credited: False`
+    rather than omitted — a survey nobody can be credited for is a thing to
+    notice, and deploy/exclusions.json is where it gets withheld.
+    """
+    records = []
+    surveys_dir = skydata_dir / "surveys"
+    if not surveys_dir.is_dir():
+        return records
+    for entry in sorted(surveys_dir.iterdir()):
+        if not entry.is_dir():
+            continue
+        props_path = entry / "properties"
+        if not props_path.is_file():
+            continue
+        props = parse_survey_properties(
+            props_path.read_text(encoding="utf-8", errors="replace")
+        )
+        credit = {k: props[k] for k in SURVEY_CREDIT_FIELDS if props.get(k)}
+        # obs_title is a label, not credit. A survey counts as credited only
+        # if it names a creator, a copyright holder, or an acknowledgement —
+        # otherwise "credited" would be true for anything with a name.
+        credited = any(credit.get(k) for k in
+                       ("hips_creator", "obs_copyright", "obs_ack"))
+        records.append({
+            "id": entry.name,
+            "type": props.get("type") or props.get("dataproduct_type"),
+            "credited": credited,
+            **credit,
+        })
+    return records
+
+
 def main(argv: list[str]) -> int:
-    if len(argv) != 3:
-        print(f"usage: {argv[0]} <skycultures_dir> <output_json>", file=sys.stderr)
+    if len(argv) not in (3, 4):
+        print(f"usage: {argv[0]} <skycultures_dir> <output_json> [skydata_dir]",
+              file=sys.stderr)
         return 2
 
     skycultures_dir = Path(argv[1])
     output_path = Path(argv[2])
+    skydata_dir = Path(argv[3]) if len(argv) == 4 else None
 
     if not skycultures_dir.is_dir():
         print(f"error: {skycultures_dir} is not a directory", file=sys.stderr)
         return 1
 
-    records = build_attribution(skycultures_dir)
+    cultures = build_attribution(skycultures_dir)
+    surveys = build_survey_attribution(skydata_dir) if skydata_dir else []
+
+    # Object rather than the bare list this used to emit, so survey credit has
+    # somewhere to live. The frontend accepts both shapes; see InfoPanel.
+    payload = {"cultures": cultures, "surveys": surveys}
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(json.dumps(records, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"generate_attribution: wrote {len(records)} record(s) to {output_path}")
+    output_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+                           encoding="utf-8")
+    print(f"generate_attribution: wrote {len(cultures)} culture record(s) and "
+          f"{len(surveys)} survey record(s) to {output_path}")
+    for s in surveys:
+        if not s["credited"]:
+            print(f"generate_attribution: WARNING: survey {s['id']!r} states no "
+                  "credit of any kind", file=sys.stderr)
     return 0
 
 

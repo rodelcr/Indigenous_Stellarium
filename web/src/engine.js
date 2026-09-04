@@ -50,6 +50,28 @@ function addDataSources(stel) {
   const base = SKYDATA_BASE_URL;
 
   core.stars.addDataSource({ url: base + 'stars' });
+  // Gaia DR2, order 3 only. The bundled demo catalogue stops near magnitude 7
+  // — naked-eye — so a community naming a fainter star could not point at it.
+  // Only order 3 is mirrored: it is the survey's coarsest level
+  // (hips_order_min = 3) at ~64 MB, and the full survey runs to order 6+,
+  // which is hundreds of gigabytes. Deeper tiles 404 and the engine treats a
+  // missing tile as empty, so zooming past order 3 simply stops adding stars
+  // rather than breaking.
+  //
+  // Mirrored rather than streamed from data.stellarium.org: that is the
+  // Stellarium project's bandwidth. Its ESA/Gaia acknowledgement is required
+  // and is carried into the app's attribution panel; see
+  // deploy/generate_attribution.py.
+  //
+  // key MUST be 'gaia'. stars.c:905 sets an `is_gaia` flag only when the key
+  // is exactly that, and the flag is what makes the engine LAYER this survey
+  // beneath the bright one: with it set, the engine raises this survey's
+  // min_vmag to the bundled catalogue's max_vmag (7.0) so Gaia supplies only
+  // stars fainter than that, and skips it entirely until the view is zoomed
+  // enough to show them (stars.c:554, 756, 936). Registered without the key
+  // it is inert — the survey loads its properties and then never requests a
+  // single tile, which is exactly what happened first time.
+  core.stars.addDataSource({ url: base + 'surveys/gaia_dr2_v2', key: 'gaia' });
   core.skycultures.addDataSource({ url: base + 'skycultures/western', key: 'western' });
   core.dsos.addDataSource({ url: base + 'dso' });
   // Deeper deep-sky catalogues, when a local mirror exists.

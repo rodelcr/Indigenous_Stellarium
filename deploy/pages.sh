@@ -75,7 +75,7 @@ cp "$REPO_ROOT/web/public/cities.json" "$STAGE_PUBLIC/cities.json"
 # The engine's demo data carries sky cultures of its own; publish only the
 # one the app boots. See deploy/exclusions.json.
 prune_bundled_skycultures "$STAGE_PUBLIC/skydata"
-prune_unattributed_surveys "$STAGE_PUBLIC/skydata"
+prune_withheld_surveys "$STAGE_PUBLIC/skydata"
 
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   name="$(basename "$dir")"
@@ -100,7 +100,7 @@ python3 "$SCRIPT_DIR/filter_taxonomy.py" \
 
 # --- 4. attribution regenerated from the filtered culture set ---------
 python3 "$SCRIPT_DIR/generate_attribution.py" \
-  "$STAGE_PUBLIC/skycultures" "$STAGE_PUBLIC/attribution.json"
+  "$STAGE_PUBLIC/skycultures" "$STAGE_PUBLIC/attribution.json" "$STAGE_PUBLIC/skydata"
 
 # --- 5. build ---------------------------------------------------------
 (
@@ -185,7 +185,8 @@ assert cities.is_file(), (
 )
 
 attribution = json.loads((out / "attribution.json").read_text(encoding="utf-8"))
-attributed = {r["id"] for r in attribution}
+cultures_att = attribution["cultures"] if isinstance(attribution, dict) else attribution
+attributed = {r["id"] for r in cultures_att}
 assert attributed == shipped, (
     f"attribution does not match shipped cultures "
     f"(only in bundle: {sorted(shipped - attributed)}; "

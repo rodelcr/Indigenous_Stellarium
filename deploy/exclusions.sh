@@ -50,12 +50,12 @@ print("\n".join(ids))
 ' "$_EXCLUSIONS_JSON"
 }
 
-_read_unattributed_surveys() {
+_read_withheld_surveys() {
   python3 -c '
 import json, sys
 with open(sys.argv[1]) as fh:
     data = json.load(fh)
-print("\n".join(data.get("unattributed_surveys") or []))
+print("\n".join(data.get("withheld_surveys") or []))
 ' "$_EXCLUSIONS_JSON"
 }
 
@@ -181,32 +181,35 @@ stage_authored_skycultures() {
   return 0
 }
 
-UNATTRIBUTED_SURVEYS=()
+WITHHELD_SURVEYS=()
 while IFS= read -r _line; do
-  [[ -n "$_line" ]] && UNATTRIBUTED_SURVEYS+=("$_line")
-done < <(_read_unattributed_surveys)
+  [[ -n "$_line" ]] && WITHHELD_SURVEYS+=("$_line")
+done < <(_read_withheld_surveys)
 
-# prune_unattributed_surveys <skydata_dir>
+# prune_withheld_surveys <skydata_dir>
 #
 # Third content source, same shape as the bundled sky cultures: skydata/ is
 # copied wholesale, so a survey mirrored into skydata/surveys/ for local
 # development would ship publicly without anyone deciding to. These carry no
 # obs_copyright, obs_ack or hips_creator, so there is nobody to credit —
 # see deploy/exclusions.json.
-prune_unattributed_surveys() {
+prune_withheld_surveys() {
   local skydata_dir="$1"
   local sv_dir="$skydata_dir/surveys"
   [[ -d "$sv_dir" ]] || return 0
 
   local name
-  for name in "${UNATTRIBUTED_SURVEYS[@]}"; do
+  for name in "${WITHHELD_SURVEYS[@]}"; do
     if [[ -d "$sv_dir/$name" ]]; then
-      echo "  withholding survey '$name' (no attribution stated by its source)"
+      # Reasons differ per survey and are recorded in exclusions.json —
+      # dso/dso2 state no credit, gaia_dr2_v2 states credit but the engine
+      # never reads its tiles. Do not assert one reason for all of them.
+      echo "  withholding survey '$name' (see deploy/exclusions.json)"
       rm -rf "${sv_dir:?}/$name"
     fi
   done
 
-  for name in "${UNATTRIBUTED_SURVEYS[@]}"; do
+  for name in "${WITHHELD_SURVEYS[@]}"; do
     if [[ -e "$sv_dir/$name" ]]; then
       echo "ERROR: unattributed survey '$name' survived pruning at $sv_dir/$name" >&2
       return 1
