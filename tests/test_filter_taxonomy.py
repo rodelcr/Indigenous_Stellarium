@@ -138,10 +138,15 @@ def test_real_manifest_and_real_taxonomy_agree():
         for c in b.get("children", [])
         if c.get("excluded")
     }
-    # Both licence-excluded cultures really are wired into the taxonomy with
-    # live skyculture_ids; if that stops being true this test should be
-    # updated deliberately, not silently pass.
-    assert marked == {"kamilaroi", "lokono"}
+    # Every withheld culture really is wired into the taxonomy with a live
+    # skyculture_id; if that stops being true this test should be updated
+    # deliberately, not silently pass. Two kinds are represented here and the
+    # distinction matters: kamilaroi and lokono are withheld because their
+    # licences name a redistributor who is not us, while ojibwe and dakota are
+    # withheld because nobody has been ASKED yet -- see
+    # docs/NATIVE_SKYWATCHERS_REQUEST.md. A culture leaving this set should be
+    # a commit that says why.
+    assert marked == {"kamilaroi", "lokono", "ojibwe", "dakota"}
 
 
 class TestBundledSkycultureAllowlist:

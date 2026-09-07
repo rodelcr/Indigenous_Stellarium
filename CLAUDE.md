@@ -77,6 +77,11 @@ worse outcome than shipping nothing.
 ./backend/.venv/bin/python scripts/fetch_cities.py --dest web/public/cities.json
 
 # Frontend dev server (proxies /api -> :8000)
+# `predev` runs scripts/stage_authored_dev.sh first, which stages EVERY
+# authored sky culture into web/public/skycultures and refreshes
+# web/public/{taxonomy,attribution}.json. Nothing did that before, so an
+# authored culture was invisible in dev (osage was live on Pages and 404'd
+# locally) and edits to data/taxonomy.json did not reach the running app.
 cd web && npm install && npm run dev
 
 # Backend — must run FROM backend/, since app.py does a sibling `import db`.
@@ -119,6 +124,7 @@ several agents before it was diagnosed.
 | `data/taxonomy.json` | Culture tree. `skyculture_id: null` + `placeholder: true` = a first-class invitation to contribute, not a disabled row. |
 | `data/skycultures_authored/` | Cultures authored **inside** this project (vs. fetched). |
 | `deploy/exclusions.json` | **The** source of truth for withheld cultures. Read by both deploy paths and by `filter_taxonomy.py`. |
+| `scripts/stage_authored_dev.sh` | Dev-only staging of authored cultures + taxonomy + attribution. Deliberately NOT the deploy path: it stages *everything*, the deploy stages only the allowlist. |
 | `deploy/pages.sh` | Static Pages build. Verifies the built artifact, not the intent. `publish_pages.sh` pushes it. |
 
 Git-ignored and regenerated, never hunted for: `vendor/`,

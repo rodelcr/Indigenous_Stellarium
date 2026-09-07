@@ -121,6 +121,18 @@
         "label": "Inuit",
         "skyculture_id": "inuit",
         "region": "Arctic (Canada, Greenland)"
+      },
+      {
+        "id": "ojibwe",
+        "label": "Ojibwe (Anishinaabe)",
+        "skyculture_id": "ojibwe",
+        "region": "Great Lakes and boreal forest (Minnesota, Wisconsin, Michigan, Ontario)"
+      },
+      {
+        "id": "dakota",
+        "label": "D(L)akota",
+        "skyculture_id": "dakota",
+        "region": "Oċeti Ṡakowiŋ homelands (Minnesota, the Dakotas)"
       }
     ]
   },

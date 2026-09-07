@@ -1,0 +1,88 @@
+{
+  "id": "ojibwe",
+  "region": "America",
+  "classification": "traditional",
+  "constellations": [
+    {
+      "id": "CON ojibwe Mooz",
+      "common_name": {
+        "english": "Moose",
+        "native": "Mooz"
+      }
+    },
+    {
+      "id": "CON ojibwe Biboonkeonini",
+      "common_name": {
+        "english": "Wintermaker",
+        "native": "Biboonkeonini"
+      }
+    },
+    {
+      "id": "CON ojibwe MishiBizhiw",
+      "common_name": {
+        "english": "Curly Tail, Great Panther",
+        "native": "Mishi bizhiw"
+      }
+    },
+    {
+      "id": "CON ojibwe Madoodiswan",
+      "common_name": {
+        "english": "Sweat Lodge",
+        "native": "Madoodiswan"
+      }
+    },
+    {
+      "id": "CON ojibwe Ajiijaak",
+      "common_name": {
+        "english": "Crane / Skeleton Bird",
+        "native": "Ajiijaak / Bineshi Okanin"
+      }
+    },
+    {
+      "id": "CON ojibwe NoondeshinBemaadizid",
+      "common_name": {
+        "english": "Exhausted Bather",
+        "native": "Noondeshin Bemaadizid"
+      }
+    },
+    {
+      "id": "CON ojibwe Nanaboujou",
+      "common_name": {
+        "english": "Nanaboujou",
+        "native": "Nanaboujou"
+      }
+    },
+    {
+      "id": "CON ojibwe Maang",
+      "common_name": {
+        "english": "Loon",
+        "native": "Maang"
+      }
+    },
+    {
+      "id": "CON ojibwe Ojiig",
+      "common_name": {
+        "english": "Fischer",
+        "native": "Ojiig"
+      }
+    }
+  ],
+  "common_names": {
+    "HIP 11767": [
+      {
+        "native": "Giwedin'anung",
+        "english": "North Star"
+      }
+    ],
+    "NAME Pleiades": [
+      {
+        "native": "Bugonagiizhig",
+        "english": "Hole in the Sky"
+      },
+      {
+        "native": "Madoo'asinik",
+        "english": "Sweating Stones"
+      }
+    ]
+  }
+}

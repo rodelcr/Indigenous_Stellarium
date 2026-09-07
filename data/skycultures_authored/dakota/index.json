@@ -1,0 +1,196 @@
+{
+  "id": "dakota",
+  "region": "America",
+  "classification": "traditional",
+  "constellations": [
+    {
+      "id": "CON dakota Nape",
+      "common_name": {
+        "english": "Hand",
+        "native": "Nape"
+      }
+    },
+    {
+      "id": "CON dakota MatoTipila",
+      "common_name": {
+        "english": "Bear's Lodge",
+        "native": "Maṫo Tipi / Maṫo Tipila"
+      }
+    },
+    {
+      "id": "CON dakota KiInyankaOcanku",
+      "common_name": {
+        "english": "Racetrack",
+        "native": "Ki Iŋyaŋka Oçaŋku"
+      }
+    },
+    {
+      "id": "CON dakota CanHdGleska",
+      "common_name": {
+        "english": "Sacred hoop",
+        "native": "Çaŋ Hd / Gleṡka Wakaŋ"
+      }
+    },
+    {
+      "id": "CON dakota Inipi",
+      "common_name": {
+        "english": "Sweat lodge",
+        "native": "Inipi / Initipi"
+      }
+    },
+    {
+      "id": "CON dakota Tayamni",
+      "common_name": {
+        "english": "Buffalo in three parts",
+        "native": "Tayamni"
+      }
+    },
+    {
+      "id": "CON dakota TayamniCutuhu",
+      "common_name": {
+        "english": "Buffalo embryo ribs",
+        "native": "Tayamni cutuhu"
+      }
+    },
+    {
+      "id": "CON dakota TayamniCankahu",
+      "common_name": {
+        "english": "Buffalo embryo backbone",
+        "native": "Tayamni caŋkahu"
+      }
+    },
+    {
+      "id": "CON dakota Zuzeca",
+      "common_name": {
+        "english": "Snake",
+        "native": "Zuzeca / Zuzuheċa"
+      }
+    },
+    {
+      "id": "CON dakota Keya",
+      "common_name": {
+        "english": "Turtle",
+        "native": "Keya"
+      }
+    },
+    {
+      "id": "CON dakota CansasaPusyapi",
+      "common_name": {
+        "english": "Dried Red Willow",
+        "native": "Caŋṡaṡa Pusyapi / Ipusye"
+      }
+    },
+    {
+      "id": "CON dakota Hehaka",
+      "common_name": {
+        "english": "Elk",
+        "native": "Heḣaka / Upaŋ"
+      }
+    },
+    {
+      "id": "CON dakota Ahdeska",
+      "common_name": {
+        "english": "Salamander",
+        "native": "Ahdeṡka / Agleṡka"
+      }
+    },
+    {
+      "id": "CON dakota OcetiPeta",
+      "common_name": {
+        "english": "Fireplace / Fire",
+        "native": "Oċeti / Peta"
+      }
+    },
+    {
+      "id": "CON dakota ToWin",
+      "common_name": {
+        "english": "Blue Woman / Birth Woman",
+        "native": "To Win / Tuŋ Wiŋ"
+      }
+    },
+    {
+      "id": "CON dakota Wicakiyuhapi",
+      "common_name": {
+        "english": "Stretcher",
+        "native": "Wiċakiyuhapi"
+      }
+    },
+    {
+      "id": "CON dakota Wasihdapi",
+      "common_name": {
+        "english": "Mourners",
+        "native": "Waṡihdapi / Waṡiglapi"
+      }
+    },
+    {
+      "id": "CON dakota Manka",
+      "common_name": {
+        "english": "Skunk",
+        "native": "Maŋka / Maka"
+      }
+    },
+    {
+      "id": "CON dakota Cancinkska",
+      "common_name": {
+        "english": "Dipper / Wooden Spoon",
+        "native": "Caŋ ciŋkska"
+      }
+    },
+    {
+      "id": "CON dakota OcetiSakowin",
+      "common_name": {
+        "english": "Seven sacred rites / Council fires",
+        "native": "Oċeti Ṡakowiŋ"
+      }
+    },
+    {
+      "id": "CON dakota Wakinyan",
+      "common_name": {
+        "english": "Thunderbird",
+        "native": "Wakiŋyaŋ"
+      }
+    }
+  ],
+  "common_names": {
+    "HIP 32349": [
+      {
+        "native": "Tayamni siŋte",
+        "english": "Buffalo embryo tail"
+      }
+    ],
+    "HIP 11767": [
+      {
+        "native": "Wiċaŋḣpi Waziyata",
+        "english": "North Star"
+      },
+      {
+        "native": "Wiċaŋḣpi Owaŋjila",
+        "english": "Star that stands in one place"
+      }
+    ],
+    "HIP 69673": [
+      {
+        "native": "Itkob u",
+        "english": "Going toward"
+      },
+      {
+        "native": "Ihuku Kigle",
+        "english": "Underwent it"
+      },
+      {
+        "native": "Aŋpo Wiċaŋḣpi Suŋkaku",
+        "english": "Younger brother of the Morning Star"
+      }
+    ],
+    "NAME Pleiades": [
+      {
+        "native": "Wiċiŋyaŋna Ṡakowiŋ / Wiċiŋcala Ṡakowiŋ",
+        "english": "Seven Girls"
+      },
+      {
+        "native": "Tayamni pa",
+        "english": "Buffalo embryo head"
+      }
+    ]
+  }
+}

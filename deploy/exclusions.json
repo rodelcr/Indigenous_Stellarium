@@ -53,6 +53,16 @@
       "id": "rapa_nui",
       "kind": "demo-artifact",
       "reason": "This project's own throwaway demo export from testing the authoring round-trip. Not real cultural content, and must never be published as though it were."
+    },
+    {
+      "id": "ojibwe",
+      "kind": "pending-consent",
+      "reason": "Not shown in this deployment. Ojibwe star knowledge is recorded and published — these names come from open-access papers by the Native Skywatchers initiative — but we have not yet asked the Ojibwe communities or Native Skywatchers whether they want it shown here, and readable is not the same as licensed. Withheld until that request is answered."
+    },
+    {
+      "id": "dakota",
+      "kind": "pending-consent",
+      "reason": "Not shown in this deployment. D(L)akota star knowledge is recorded and published — these names come from an open-access paper by the Native Skywatchers initiative — but we have not yet asked the D(L)akota communities or Native Skywatchers whether they want it shown here, and readable is not the same as licensed. Withheld until that request is answered."
     }
   ],
   "bundled_skycultures_allowed": [
@@ -63,7 +73,7 @@
   "authored_skycultures_published": [
     "osage"
   ],
-  "_authored_note": "osage: star names and translations from La Flesche 1928 and 1932. The ceremonial recitations (wi'-gi-e) in the same sources are deliberately NOT included, and La Flesche's charts of Wa'-ba-ha and Ta Tha'-bthin are not reproduced. yana_phuyu is NOT listed: it remains a literature-derived draft with open caveats and has not been cleared for publication.",
+  "_authored_note": "osage: star names and translations from La Flesche 1928 and 1932. The ceremonial recitations (wi'-gi-e) in the same sources are deliberately NOT included, and La Flesche's charts of Wa'-ba-ha and Ta Tha'-bthin are not reproduced. yana_phuyu is NOT listed: it remains a literature-derived draft with open caveats and has not been cleared for publication. ojibwe and dakota are NOT listed either: their names come from two open-access Native Skywatchers papers (arXiv:2008.13214, arXiv:2008.08224), but the star maps and guidebooks those papers describe are (c) Native Skywatchers and sold, and no licence is stated anywhere for the underlying knowledge. Readable is not licensed. They are staged for local development only until the request in docs/NATIVE_SKYWATCHERS_REQUEST.md is sent and answered.",
   "_gaia_note": "gaia_dr2_v2 is NOT excluded for want of attribution — it carries obs_copyright (Guillaume Chereau) and the full ESA/Gaia/DPAC acknowledgement, and would pass the credit assertion. It is withheld because 64 MB of it does nothing: with the survey mirrored locally and registered as key 'gaia' (which stars.c:905 requires to set is_gaia), the engine fetches its properties file and then never requests a single tile. Tried: fov down to 1 degree, bortle_index 1, exposure_scale 3, star_linear_scale 4 — no tile request in any case. The engine's own reference frontend never wires this survey either; it loads only skydata/stars. See docs/GAIA_DEPTH_FINDING.md. The mirror, the fetch script and the engine wiring are all kept so this can be picked up without redoing the work.",
   "withheld_surveys": [
     "dso",
