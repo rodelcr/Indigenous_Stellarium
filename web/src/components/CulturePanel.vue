@@ -22,6 +22,8 @@ import { ref, onMounted } from 'vue';
 import { getStel } from '../engine.js';
 import { checkDraftAvailable as checkDraftAvailableImpl } from '../draftAvailability.js';
 import { assetUrl } from '../assetUrl.js';
+import { waitFor } from '../waitForEngine.js';
+import ConstellationList from './ConstellationList.vue';
 
 const emit = defineEmits(['culture-selected']);
 
@@ -33,6 +35,9 @@ const expanded = ref({});
 // The currently active child node (object reference — see note above), or
 // null when no culture is selected (first-load / stars-only state).
 const activeChild = ref(null);
+// The sky-culture id currently loaded in the engine (null for a
+// placeholder with no data), used by the figure list below the tree.
+const activeCultureId = ref(null);
 
 // Placeholder taxonomy nodes (skyculture_id === null) have no official
 // dataset, but a contributor may have exported an authored draft to
@@ -89,14 +94,33 @@ function toggleBucket(bucketId) {
   expanded.value[bucketId] = !expanded.value[bucketId];
 }
 
-function selectChild(child) {
-  const stel = getStel();
+// Increments on every selection, so a slow engine boot cannot let an
+// earlier click apply on top of a later one.
+let selectionToken = 0;
+
+async function selectChild(child) {
+  const token = ++selectionToken;
+
+  // Reflect the click immediately. This used to happen only AFTER the
+  // engine work, so a click during boot -- the first click, for anyone who
+  // does not wait for the WASM to load -- highlighted nothing, loaded
+  // nothing, and reported nothing to the user. Hit while testing the
+  // figure list, on the very first click.
+  activeChild.value = child;
+  const loadableIdEarly =
+    child.skyculture_id ||
+    (child.placeholder && draftAvailable.value[child.id] ? child.id : null);
+  activeCultureId.value = loadableIdEarly;
+
+  // Wait for the engine rather than dropping the selection on the floor.
+  const stel = await waitFor(getStel);
+  if (token !== selectionToken) return; // superseded by a later click
   if (!stel) {
-    // Engine hasn't finished booting yet; ignore rather than throwing on
-    // a null stel.core. Selecting a culture before the WASM engine is
-    // ready is a real (if narrow) race, not a case worth building a
-    // loading-state UI around for this task.
-    console.warn('CulturePanel: engine not ready yet, ignoring selection of', child.id);
+    // Waited a full second of frames and the engine still is not there.
+    // That is a boot failure, which App.vue already surfaces; nothing
+    // useful to do here beyond not throwing on a null stel.core.
+    console.warn('CulturePanel: engine never became ready; selection of',
+                 child.id, 'not applied to the sky');
     return;
   }
 
@@ -141,7 +165,6 @@ function selectChild(child) {
     core.stars.hints_visible = false;
   }
 
-  activeChild.value = child;
   emit('culture-selected', child.id);
 }
 </script>
@@ -201,6 +224,18 @@ function selectChild(child) {
                 no dataset yet — help us build it
               </span>
             </button>
+
+            <!-- The active culture's figures, directly beneath the culture
+                 they belong to. Putting this at the foot of the panel
+                 instead buried it under the whole tree, where nobody would
+                 scroll to find it. Until this list existed, the only way to
+                 find a constellation was to pan the sky until one appeared
+                 — which does not work for a figure a third of a degree
+                 across, and that was the actual complaint. -->
+            <ConstellationList
+              v-if="activeChild === child"
+              :culture-id="activeCultureId"
+            />
           </li>
         </ul>
       </li>

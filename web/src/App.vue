@@ -3,8 +3,9 @@
 // Keep this file thin: Tasks 4-6 add sibling panels (culture picker,
 // selection info, authoring UI) here. Engine lifecycle/config lives in
 // engine.js; do not grow that logic back into this component.
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { initEngine } from './engine.js';
+import { startAutoFraming } from './autoFrame.js';
 import CulturePanel from './components/CulturePanel.vue';
 import ObjectInfo from './components/ObjectInfo.vue';
 import AuthoringPanel from './components/AuthoringPanel.vue';
@@ -22,9 +23,14 @@ const selectedCultureKey = ref(null);
 // ControlBar (which revokes it); App.vue only passes it through.
 const horizonSrc = ref(null);
 
+// Unsubscribe for the selection watcher that zooms to small constellations.
+let stopAutoFraming = null;
+
 onMounted(async () => {
   try {
     await initEngine(canvas.value);
+    // Only after the engine exists: the subscription reads stel.core.
+    stopAutoFraming = startAutoFraming();
   } catch (err) {
     // If the WASM fails to load (bad path, unsupported browser, network
     // failure fetching the .wasm), surface it instead of leaving a
@@ -32,6 +38,10 @@ onMounted(async () => {
     console.error('Failed to initialize stellarium-web-engine:', err);
     loadError.value = err;
   }
+});
+
+onUnmounted(() => {
+  if (stopAutoFraming) stopAutoFraming();
 });
 </script>
 

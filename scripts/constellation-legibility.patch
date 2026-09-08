@@ -1,0 +1,48 @@
+--- a/src/modules/constellations.c
++++ b/src/modules/constellations.c
+@@ -641,6 +641,16 @@
+     ret = !is_clipped(4, pos, mx, my);
+     return ret;
+ }
++
++// patched by indigenous-stellarium: see render_lines(). Figures with an
++// angular RADIUS below SMALL_RADIUS are drawn with progressively more
++// opaque lines, so a figure a third of a degree across is visible at all.
++// 3 degrees of radius is 6 degrees across -- comfortably larger than the
++// smallest recorded figures and far smaller than any IAU constellation, so
++// the familiar sky is unaffected.
++#define SMALL_RADIUS    (3.0 * DD2R)
++#define LINE_ALPHA_BASE 0.4
++#define LINE_ALPHA_MAX  0.9
+ 
+ static int render_lines(constellation_t *con, const painter_t *_painter,
+                         bool selected)
+@@ -665,7 +675,27 @@
+     if (painter_is_cap_clipped(&painter, FRAME_ICRF, con->lines.cap))
+         return 0;
+ 
+-    vec4_set(lines_color, 0.65, 1.0, 1.0, 0.4);
++    // patched by indigenous-stellarium: small-figure line legibility.
++    // A constellation only a fraction of a degree across is a handful of
++    // pixels at any normal field of view, and 0.4 alpha over a star field
++    // makes it invisible. Osage Mi-ka'-k'e u-ki-tha-c'in spans 31.3
++    // ARCMINUTES and Ta Tha'-bthin 2.76 degrees; both loaded and drew
++    // correctly and neither could be seen, and were reported as missing.
++    //
++    // Not every tradition draws figures the size of Orion. A culture that
++    // records a three-star belt and a close pair must not be effectively
++    // unrenderable because the default palette was chosen for large ones.
++    //
++    // Alpha rises as the figure shrinks, from the unchanged 0.4 at
++    // SMALL_RADIUS to LINE_ALPHA_MAX at a point. Large figures are
++    // untouched, so no existing culture's appearance changes.
++    double lines_alpha = LINE_ALPHA_BASE;
++    if (con->radius > 0 && con->radius < SMALL_RADIUS) {
++        const double t = con->radius / SMALL_RADIUS;
++        lines_alpha = LINE_ALPHA_BASE + (1.0 - t) * (LINE_ALPHA_MAX -
++                                                     LINE_ALPHA_BASE);
++    }
++    vec4_set(lines_color, 0.65, 1.0, 1.0, lines_alpha);
+     vec4_emul(lines_color, painter.color, painter.color);
+ 
+     lines = calloc(con->lines.nb_stars, sizeof(*lines));

@@ -88,7 +88,7 @@ cd web && npm install && npm run dev
 # `uvicorn backend.app:app` from the repo root fails with ModuleNotFoundError.
 cd backend && .venv/bin/uvicorn app:app --reload --port 8000
 
-# Tests — 68 frontend, 42 backend/scripts
+# Tests — 235 frontend, 77 backend/scripts
 cd web && npx vitest run
 ./backend/.venv/bin/python -m pytest tests/ backend/ -q
 
@@ -120,12 +120,16 @@ several agents before it was diagnosed.
 | `web/src/starDisplayName.js` | Positive-identification display names, so catalogue designations never leak into the UI. |
 | `web/src/styles/tokens.css` | House style. Consolas, `--radius: 0`, no glow/bloom/gradient/blur. |
 | `backend/app.py`, `backend/db.py` | FastAPI + stdlib sqlite3. No ORM. |
-| `scripts/*.patch` | Three engine patches, applied idempotently by `build_engine.sh`. |
+| `scripts/*.patch` | **Five** engine patches, applied idempotently by `build_engine.sh`. Two touch `constellations.c`, so each guards on its OWN marker string — a shared guard would silently skip the second forever. |
 | `data/taxonomy.json` | Culture tree. `skyculture_id: null` + `placeholder: true` = a first-class invitation to contribute, not a disabled row. |
 | `data/skycultures_authored/` | Cultures authored **inside** this project (vs. fetched). |
 | `deploy/exclusions.json` | **The** source of truth for withheld cultures. Read by both deploy paths and by `filter_taxonomy.py`. |
 | `scripts/stage_authored_dev.sh` | Dev-only staging of authored cultures + taxonomy + attribution. Deliberately NOT the deploy path: it stages *everything*, the deploy stages only the allowlist. |
 | `deploy/pages.sh` | Static Pages build. Verifies the built artifact, not the intent. `publish_pages.sh` pushes it. |
+| `web/src/skyFraming.js` | What field of view shows a figure. Pure. |
+| `web/src/constellationList.js` | A culture's figures as a list, carrying `hasLines` so name-only figures can say so instead of looking broken. Pure. |
+| `web/src/autoFrame.js` | Zooms to a selected constellation **only when it is too small to see**, and never for a star. |
+| `web/src/waitForEngine.js` | `waitFor(probe)` — retries per animation frame for engine state that only exists after a frame. |
 
 Git-ignored and regenerated, never hunted for: `vendor/`,
 `web/public/{engine,skydata,skycultures,taxonomy.json,attribution.json}`,
@@ -214,6 +218,27 @@ formats this engine reads, and the engine already has a `dss` module we never
 load. Caveats: someone else's bandwidth (mirror for production), order-9
 needs network on every pan, and DSS attribution to STScI/NASA + CDS is
 required.
+
+**The engine is frame-driven, and this has caused more wrong diagnoses in
+this project than any other single fact.** Writing `skycultures.current_id`
+does not switch the culture synchronously, and reading the property straight
+back returns the PREVIOUS value. Constellation objects for a culture do not
+exist until a frame has run, so `getObj('CON osage TaThabthin')` right after
+a switch returns null. Worse, **Chrome throttles `requestAnimationFrame` to
+zero in a background tab**, so a devtools/automation session sees `fps: 0`
+and an engine that never advances — every read looks stale forever. Check
+`core.fps` before concluding anything from engine state, and use
+`waitForEngine.js` rather than reading immediately. Symptoms already
+misattributed to real bugs this way: "the culture switch is broken", "time
+advance is broken", "cultural names never reach the panel".
+
+**Constellation lines are painted at 0.4 alpha, which was chosen for figures
+the size of Orion.** Osage Ṭa Tha´-bthiⁿ is 2.76° across and
+Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ is **31.3 arcminutes** — about 30 and 6 pixels at
+the default 50° view. Both loaded and drew correctly and were reported as
+missing. `scripts/constellation-legibility.patch` raises the alpha as a
+figure shrinks. Not every tradition draws figures the size of Orion, and the
+app must not be usable only by the ones that do.
 
 **A community naming a star fainter than magnitude 7 currently cannot point
 at it** — it is not in the dataset. That is a contribution blocker, not a

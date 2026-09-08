@@ -24,7 +24,7 @@ VENDOR_DIR="${REPO_ROOT}/vendor/stellarium-web-engine"
 ENGINE_OUT="${REPO_ROOT}/web/public/engine"
 SKYDATA_OUT="${REPO_ROOT}/web/public/skydata"
 ENGINE_REPO_URL="https://github.com/Stellarium/stellarium-web-engine"
-# Pinned commit. The three patches this script applies match against context
+# Pinned commit. The five patches this script applies match against context
 # lines in upstream source; an unpinned clone means a future upstream edit
 # near any patched hunk turns a reproducible build into a failed `git apply`
 # — or, worse, a build that succeeds against code we never reviewed.
@@ -34,10 +34,10 @@ ENGINE_REPO_URL="https://github.com/Stellarium/stellarium-web-engine"
 # touches it" was an assumption worth not relying on.
 #
 # To move the pin deliberately: update this SHA, re-run this script from a
-# clean vendor/, and confirm all three patches still apply.
+# clean vendor/, and confirm all five patches still apply.
 ENGINE_COMMIT="5403e930416f6dc1dbcca08486a045dd8be67f53"
 
-echo "==> [1/9] Checking toolchain (emcc, scons)"
+echo "==> [1/10] Checking toolchain (emcc, scons)"
 if ! command -v emcc >/dev/null 2>&1; then
   echo "ERROR: emcc (Emscripten) not found on PATH. Install with: brew install emscripten" >&2
   exit 1
@@ -49,7 +49,7 @@ fi
 echo "    emcc:  $(emcc --version | head -1)"
 echo "    scons: $(scons --version | sed -n '2p')"
 
-echo "==> [2/9] Fetching stellarium-web-engine into vendor/"
+echo "==> [2/10] Fetching stellarium-web-engine into vendor/"
 if [ -d "${VENDOR_DIR}/.git" ]; then
   echo "    vendor/stellarium-web-engine already present — skipping clone"
 elif [ -e "${VENDOR_DIR}" ]; then
@@ -73,7 +73,7 @@ if [ "${ACTUAL_COMMIT}" != "${ENGINE_COMMIT}" ]; then
     git -C "${VENDOR_DIR}" fetch --quiet origin
   # Distinguish the two failure modes. The likely one on an existing machine
   # is NOT a missing object: vendor/ is git-ignored and every prior run left
-  # it dirty (the three patches modify SConstruct, src/modules/stars.c and
+  # it dirty (the patches modify SConstruct, src/modules/stars.c and
   # apps/simple-html/... without committing), so git refuses with "local
   # changes would be overwritten". Reporting that as "upstream rewrote
   # history" would send someone to bump ENGINE_COMMIT — moving the pin off
@@ -82,7 +82,7 @@ if [ "${ACTUAL_COMMIT}" != "${ENGINE_COMMIT}" ]; then
     if ! git -C "${VENDOR_DIR}" cat-file -e "${ENGINE_COMMIT}^{commit}" 2>/dev/null; then
       echo "ERROR: pinned engine commit ${ENGINE_COMMIT} not found upstream." >&2
       echo "       If upstream rewrote history, update ENGINE_COMMIT in this" >&2
-      echo "       script DELIBERATELY and re-verify all three patches apply" >&2
+      echo "       script DELIBERATELY and re-verify all five patches apply" >&2
       echo "       to a fresh clone (git apply --check) before trusting it." >&2
     else
       echo "ERROR: the commit exists but checkout was refused — vendor/ has" >&2
@@ -115,7 +115,7 @@ echo "    engine at $(git -C "${VENDOR_DIR}" rev-parse --short HEAD) (pinned)"
 #      definitions in vendored zlib, and one unused-but-set-variable in
 #      src/modules/comets.c. All three are suppressed via -Wno- flags
 #      rather than hand-editing vendored/engine source.
-echo "==> [3/9] Patching vendor/ SConstruct for Emscripten 6.x compatibility"
+echo "==> [3/10] Patching vendor/ SConstruct for Emscripten 6.x compatibility"
 BUILD_PATCH_FILE="${REPO_ROOT}/scripts/engine-emscripten6-compat.patch"
 if grep -q "patched by indigenous-stellarium" "${VENDOR_DIR}/SConstruct" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -136,7 +136,7 @@ fi
 # calls — while the adjacent vuetify@2.x CSS `<link>` was already pinned.
 # Patching so the smoke test (and anyone else who reaches for this demo
 # page) works out of the box.
-echo "==> [4/9] Patching apps/simple-html/ demo page for the smoke test"
+echo "==> [4/10] Patching apps/simple-html/ demo page for the smoke test"
 DEMO_PATCH_FILE="${REPO_ROOT}/scripts/engine-demo-page-fixes.patch"
 if grep -q "vue@2/dist/vue.js" "${VENDOR_DIR}/apps/simple-html/stellarium-web-engine.html" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -156,7 +156,7 @@ fi
 # scripts/hip-designation.patch makes star_get_designations() always
 # emit "HIP <n>" when star->hip is set, guarding against a duplicate
 # emission in the id-less-star fallback case.
-echo "==> [5/9] Patching vendor/ stars.c to expose HIP designations"
+echo "==> [5/10] Patching vendor/ stars.c to expose HIP designations"
 HIP_PATCH_FILE="${REPO_ROOT}/scripts/hip-designation.patch"
 if grep -q "patched by indigenous-stellarium" "${VENDOR_DIR}/src/modules/stars.c" 2>/dev/null; then
   echo "    already patched — skipping"
@@ -165,7 +165,7 @@ else
   echo "    applied ${HIP_PATCH_FILE}"
 fi
 
-echo "==> [6/9] Patching vendor/ constellations.c for constellation dimming"
+echo "==> [6/10] Patching vendor/ constellations.c for constellation dimming"
 # Upstream hides every constellation except the one under the centre of the
 # view (show_only_pointed, on by default), so figures pop in and out as you
 # pan and the sky reads as empty everywhere but the middle. This patch turns
@@ -181,13 +181,33 @@ else
   echo "    applied ${CONS_PATCH_FILE}"
 fi
 
-echo "==> [7/9] Building engine WASM (make js)"
+echo "==> [7/10] Patching vendor/ constellations.c for small-figure legibility"
+# Constellation lines are painted at 0.4 alpha, a palette chosen for figures
+# the size of Orion. A figure a third of a degree across is a few pixels long
+# and simply cannot be seen at that alpha -- Osage Mi-ka'-k'e u-ki-tha-c'in
+# (31.3 arcminutes) and Ta Tha'-bthin (2.76 degrees) both loaded and drew
+# correctly and were reported as missing. This patch raises the alpha as a
+# figure gets smaller, leaving large figures untouched.
+#
+# NOTE the guard greps for this patch's OWN marker, not the generic
+# "patched by indigenous-stellarium" used elsewhere: constellation-dimming
+# already stamps that string into this same file, so the generic guard would
+# skip this patch forever and silently produce a build without it.
+LEGIBILITY_PATCH_FILE="${REPO_ROOT}/scripts/constellation-legibility.patch"
+if grep -q "small-figure line legibility" "${VENDOR_DIR}/src/modules/constellations.c" 2>/dev/null; then
+  echo "    already patched — skipping"
+else
+  (cd "${VENDOR_DIR}" && git apply "${LEGIBILITY_PATCH_FILE}")
+  echo "    applied ${LEGIBILITY_PATCH_FILE}"
+fi
+
+echo "==> [8/10] Building engine WASM (make js)"
 (
   cd "${VENDOR_DIR}"
   make js
 )
 
-echo "==> [8/9] Staging build/stellarium-web-engine.{js,wasm} -> web/public/engine/"
+echo "==> [9/10] Staging build/stellarium-web-engine.{js,wasm} -> web/public/engine/"
 mkdir -p "${ENGINE_OUT}"
 BUILT_JS="${VENDOR_DIR}/build/stellarium-web-engine.js"
 BUILT_WASM="${VENDOR_DIR}/build/stellarium-web-engine.wasm"
@@ -200,7 +220,7 @@ fi
 cp "${BUILT_JS}" "${ENGINE_OUT}/stellarium-web-engine.js"
 cp "${BUILT_WASM}" "${ENGINE_OUT}/stellarium-web-engine.wasm"
 
-echo "==> [9/9] Staging apps/test-skydata/ -> web/public/skydata/"
+echo "==> [10/10] Staging apps/test-skydata/ -> web/public/skydata/"
 rm -rf "${SKYDATA_OUT}"
 cp -R "${VENDOR_DIR}/apps/test-skydata" "${SKYDATA_OUT}"
 
