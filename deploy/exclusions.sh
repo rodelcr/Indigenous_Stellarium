@@ -15,6 +15,8 @@
 #   EXCLUDE_CULTURES               array of culture ids to omit
 #   BUNDLED_SKYCULTURES_ALLOWED    array of ids allowed inside skydata/
 #   assert_no_excluded_cultures <dir>       post-copy verification
+#   is_authored_culture <src> <name>        skip drafts in fetched-set loops
+#   assert_no_unpublished_authored <src> <dir>  post-copy verification
 #   prune_bundled_skycultures <skydata_dir> drop unused bundled cultures
 #
 # Two separate guards, because there are two separate sources of cultural
@@ -178,6 +180,55 @@ stage_authored_skycultures() {
     fi
     echo "  publishing authored culture '$name'"
   done
+  return 0
+}
+
+# is_authored_culture <authored_src_dir> <name>
+#
+# True if <name> is a culture authored inside this project. Used by the
+# fetched-set copy loops in both deploy paths to SKIP such directories:
+# scripts/stage_authored_dev.sh copies EVERY authored draft into
+# web/public/skycultures/ so the dev server can serve it, and the deploy
+# paths copy that same directory. Without this check a draft rides into the
+# public bundle through the fetched-set loop, bypassing the
+# authored_skycultures_published allowlist entirely. yana_phuyu -- an
+# uncleared literature draft -- did exactly that on 2026-09-21; ojibwe and
+# dakota were caught only because they had also been added to the denylist.
+is_authored_culture() {
+  local src="$1" name="$2"
+  [[ -d "$src/$name" ]]
+}
+
+# assert_no_unpublished_authored <authored_src_dir> <dest_skycultures_dir>
+#
+# Post-copy verification, same shape as assert_no_excluded_cultures: every
+# authored culture present in the output must be on the allowlist. Inspects
+# the artifact, not the loop that was supposed to filter it.
+assert_no_unpublished_authored() {
+  local src="$1" dest="$2"
+  local dir name allowed a found=0
+  if [[ ! -d "$dest" ]]; then
+    echo "ERROR: cannot verify authored cultures -- '$dest' does not exist." >&2
+    return 1
+  fi
+  for dir in "$src"/*/; do
+    [[ -d "$dir" ]] || continue
+    name="$(basename "$dir")"
+    [[ -e "$dest/$name" ]] || continue
+    allowed=false
+    for a in "${AUTHORED_PUBLISHED[@]}"; do
+      [[ "$name" == "$a" ]] && allowed=true
+    done
+    if [[ "$allowed" != true ]]; then
+      echo "ERROR: authored culture '$name' is in the output at $dest/$name but is" \
+           "not in authored_skycultures_published (deploy/exclusions.json)." >&2
+      found=1
+    fi
+  done
+  if [[ "$found" -ne 0 ]]; then
+    echo "ERROR: refusing to publish an uncleared draft." >&2
+    return 1
+  fi
   return 0
 }
 

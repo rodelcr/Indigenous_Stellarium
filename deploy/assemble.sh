@@ -81,6 +81,12 @@ python3 "$SCRIPT_DIR/filter_taxonomy.py" \
 
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   name="$(basename "$dir")"
+  # Authored drafts are staged into this directory for dev; they ship only
+  # via stage_authored_skycultures below, gated by the allowlist.
+  if is_authored_culture "$REPO_ROOT/data/skycultures_authored" "$name"; then
+    echo "assemble.sh: skipping dev-staged authored culture '$name' (allowlist decides)"
+    continue
+  fi
   skip=false
   for ex in "${EXCLUDE_CULTURES[@]}"; do
     [[ "$name" == "$ex" ]] && skip=true
@@ -96,6 +102,7 @@ done
 stage_authored_skycultures "$REPO_ROOT/data/skycultures_authored" "$OUT/web/public/skycultures"
 
 assert_no_excluded_cultures "$OUT/web/public/skycultures"
+assert_no_unpublished_authored "$REPO_ROOT/data/skycultures_authored" "$OUT/web/public/skycultures"
 # Verify the FILTERED taxonomy no longer offers any withheld culture. Built
 # from the manifest rather than hardcoded ids — the previous version listed
 # the three cultures literally, so adding a fourth to exclusions.json would

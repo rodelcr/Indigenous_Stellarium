@@ -79,6 +79,12 @@ prune_withheld_surveys "$STAGE_PUBLIC/skydata"
 
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   name="$(basename "$dir")"
+  # Authored drafts are staged into this directory for dev; they ship only
+  # via stage_authored_skycultures below, gated by the allowlist.
+  if is_authored_culture "$REPO_ROOT/data/skycultures_authored" "$name"; then
+    echo "pages.sh: skipping dev-staged authored culture '$name' (allowlist decides)"
+    continue
+  fi
   skip=false
   for ex in "${EXCLUDE_CULTURES[@]}"; do
     [[ "$name" == "$ex" ]] && skip=true
@@ -93,6 +99,7 @@ done
 stage_authored_skycultures "$REPO_ROOT/data/skycultures_authored" "$STAGE_PUBLIC/skycultures"
 
 assert_no_excluded_cultures "$STAGE_PUBLIC/skycultures"
+assert_no_unpublished_authored "$REPO_ROOT/data/skycultures_authored" "$STAGE_PUBLIC/skycultures"
 
 # --- 3. taxonomy filtered to match what is shipped --------------------
 python3 "$SCRIPT_DIR/filter_taxonomy.py" \
@@ -118,6 +125,7 @@ touch "$OUT/.nojekyll"
 
 # --- 6. verify the artifact, not the intent ---------------------------
 assert_no_excluded_cultures "$OUT/skycultures"
+assert_no_unpublished_authored "$REPO_ROOT/data/skycultures_authored" "$OUT/skycultures"
 
 python3 - "$OUT" "$PAGES_BASE" "$SOURCE_URL" <<'PY'
 import json, sys
