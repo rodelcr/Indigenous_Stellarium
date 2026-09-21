@@ -54,6 +54,13 @@ worse outcome than shipping nothing.
    an allowlist (`bundled_skycultures_allowed`) naming only what `engine.js`
    actually boots. A `belarusian` culture shipped live through this gap —
    unattributed, and licensed upstream as "Text and data: TODO".
+   **There is a THIRD path**: `scripts/stage_authored_dev.sh` (run by
+   `predev`) copies *every* authored draft into `web/public/skycultures/`,
+   and the deploy loops copy that directory. `is_authored_culture` skips
+   those in the fetched-set loop and `assert_no_unpublished_authored` checks
+   the artifact; only `authored_skycultures_published` ships an authored
+   culture. `yana_phuyu` — uncleared — reached a built bundle this way on
+   2026-09-21 and was caught before publish.
 6. **Catalogue numbers are storage, never interface.** HIP ids must stay
    internally — Stellarium's constellation `lines` *are* HIP arrays, and
    dropping them forfeits export and upstreaming. But no contributor should
