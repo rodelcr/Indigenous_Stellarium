@@ -65,6 +65,8 @@ trap 'git -C "$REPO_ROOT" worktree remove --force "$WORKTREE" >/dev/null 2>&1 ||
 # the script silently, after it had already printed a reassuring list of
 # cultures, so a failed publish read exactly like a successful one.
 STAGING_BRANCH="pages-publish-staging"
+# The staging branch is deleted again after the push (below); it is only
+# ever a vehicle for one commit.
 (
   cd "$WORKTREE"
   git branch -D "$STAGING_BRANCH" >/dev/null 2>&1 || true
@@ -78,6 +80,8 @@ STAGING_BRANCH="pages-publish-staging"
   git commit -q -m "deploy: static bundle from $(git -C "$REPO_ROOT" rev-parse --short HEAD)"
   git push --force "$REMOTE" "HEAD:$BRANCH"
 )
+git -C "$REPO_ROOT" worktree remove --force "$WORKTREE" >/dev/null 2>&1 || true
+git -C "$REPO_ROOT" branch -D "$STAGING_BRANCH" >/dev/null 2>&1 || true
 
 # Verify the REMOTE, not the local intent. A push that silently failed used
 # to be indistinguishable from one that worked.
