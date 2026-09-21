@@ -129,6 +129,7 @@ PY
 
 # Verify the LIVE site serves this build, not just that the repo holds it.
 # A static Space republishes within seconds of a commit, but not instantly.
+# -L: the Space answers / with a 302 to /index.html.
 owner="${SPACE_ID%%/*}"
 name="${SPACE_ID##*/}"
 live_host="$(echo "${owner}-${name}" | tr '[:upper:]_' '[:lower:]-')"
@@ -139,7 +140,7 @@ built_js="$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' "$BUNDLE/index.html" | hea
   exit 1
 }
 for attempt in $(seq 1 12); do
-  if curl -fsS "$LIVE_URL" 2>/dev/null | grep -q "$built_js"; then
+  if curl -fsSL "$LIVE_URL" 2>/dev/null | grep -q "$built_js"; then
     echo "publish_space.sh: live at $LIVE_URL — serving $built_js (verified)"
     exit 0
   fi
