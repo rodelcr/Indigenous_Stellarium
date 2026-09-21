@@ -1,0 +1,61 @@
+{
+  "id": "osage",
+  "region": "Osage Nation (Oklahoma; historically Missouri, Arkansas, Kansas)",
+  "classification": "traditional",
+  "constellations": [
+    {
+      "id": "CON osage TaThabthin",
+      "common_name": {
+        "english": "Three-deer",
+        "native": "Ṭa Tha´-bthiⁿ"
+      },
+      "lines": [
+        [
+          26727,
+          26311,
+          25930
+        ]
+      ]
+    },
+    {
+      "id": "CON osage Mikakeukithacin",
+      "common_name": {
+        "english": "Stars-strung-together, or Double-star",
+        "native": "Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ"
+      },
+      "lines": [
+        [
+          26221,
+          26241
+        ]
+      ]
+    },
+    {
+      "id": "CON osage Wabaha",
+      "common_name": {
+        "english": "Litter, the stretcher",
+        "native": "Wa´-ba-ha"
+      }
+    }
+  ],
+  "common_names": {
+    "NAME Pleiades": [
+      {
+        "native": "Ṭa-p̣a´",
+        "english": "Deer-head"
+      }
+    ],
+    "HIP 11767": [
+      {
+        "native": "Mi-ḳa´-ḳ'e Zhu-dse",
+        "english": "Red-star"
+      }
+    ],
+    "HIP 32349": [
+      {
+        "native": "Shoⁿ´-ge a-ga-ḳ'e e-goⁿ",
+        "english": "Dog that lies suspended in the sky"
+      }
+    ]
+  }
+}
