@@ -24,8 +24,7 @@ Usage (importable):
 `skycultures_dir` is expected to already reflect whatever set of
 cultures is being shipped (this script does not itself decide which
 culture directories are present — that filtering happens earlier, in
-deploy/assemble.sh, which is also the place that excludes kamilaroi,
-lokono, and rapa_nui from the deployed payload).
+deploy/build_static.sh, driven by deploy/exclusions.json).
 """
 from __future__ import annotations
 

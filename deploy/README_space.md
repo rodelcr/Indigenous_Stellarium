@@ -3,82 +3,67 @@ title: Indigenous Stellarium
 emoji: 🌌
 colorFrom: gray
 colorTo: yellow
-sdk: docker
-app_port: 7860
+sdk: static
 pinned: false
 license: agpl-3.0
 ---
 
 # Indigenous Stellarium
 
-A web sky viewer that makes **indigenous constellations first-class**
-citizens of the night sky — shown by default, alongside (not subordinate
-to) the Western/IAU constellations, which are off unless a viewer
-chooses them. Community members can also **contribute their own
-constellations**: click stars in the sky to define a constellation's
-members and line segments, attach a name and provenance record, save the
-draft, and export it into Stellarium's native sky-culture format.
+A planetarium in a web browser where **indigenous constellations are the
+default view** and the Western/IAU sky is off unless a visitor chooses it.
+Community members can also define a constellation by clicking stars, attach
+a provenance record, and export it into Stellarium's native sky-culture
+format.
 
-This Space is **Phase 1: a viewer + authoring demo**, built to be
-showable to communities and potential collaborators so we can recruit
-per-culture stewards for the review process described below — it is not
-yet a production contribution pipeline.
+This Space is a **mirror of the GitHub Pages deployment** at
+<https://rodelcr.github.io/Indigenous_Stellarium/>. Both are built from the
+same source commit by the same script and carry identical content; the
+`deploy/release.sh` script in the source repository publishes both together
+and verifies what landed on each.
 
 ## Demo sandbox — please read before contributing knowledge here
 
-- **Saved drafts are session/storage-scoped and not guaranteed to
-  persist.** This Space runs on Hugging Face's free tier, whose storage
-  is ephemeral — a rebuild or restart of this Space can wipe anything
-  saved here.
-- **Nothing submitted here is reviewed by community stewards.** The
-  steward/governance model — where designated members of each culture
-  review and approve submissions before anything is published — is a
-  Phase 2 feature and does not exist yet. Authoring here is a
-  demonstration of the mechanism, not a live intake of cultural
+- **This Space has no server.** It is a static site. Drafts you author are
+  stored in your own browser and never leave your machine. Nothing you type
+  here is collected by us.
+- **Nothing is reviewed by community stewards yet.** The steward model — in
+  which designated members of each culture review submissions before
+  anything is published — is a Phase 2 feature and does not exist. Authoring
+  here demonstrates the mechanism; it is not a live intake of cultural
   knowledge.
 - If you are a community member interested in stewarding your culture's
-  entries in a future version of this project, please reach out through
-  the source repository rather than submitting knowledge through this
-  demo expecting it to be stewarded.
+  entries, please reach out through the source repository rather than
+  submitting knowledge through this demo.
 
-This notice is also shown in the app itself, not just here.
+The same notice is shown in the app itself.
 
 ## Sky cultures shown
 
-Constellation and star-name data is pulled verbatim, with attribution
-preserved, from the official
+Constellation and star-name data for fetched cultures is taken verbatim,
+with attribution preserved, from the official
 [stellarium-skycultures](https://github.com/Stellarium/stellarium-skycultures)
-repository. This project does not invent, translate, or edit any
-culture's content. Every shipped culture's authors and license are
-listed in-app (button in the corner of the viewer) and are generated
-directly from that culture's own `description.md`, not hand-written for
-this deployment.
+repository. Cultures authored inside this project cite their sources in
+full and are published only after a deliberate decision recorded in the
+source repository's `deploy/exclusions.json`. Every shipped culture's
+authors and licence are listed in-app and are generated from that culture's
+own `description.md`, not hand-written for this deployment.
 
-A small number of cultures available in the upstream repository are
-**not** included in this deployment because their license permits
+Some upstream cultures are **not** included because their licence permits
 redistribution only by a specific named party (the Stellarium project or
-Stellarium Labs), and this Space is neither — shipping them here would
-contradict the consent-and-attribution premise of the whole project.
+Stellarium Labs), and this project is neither. The app says so in place
+rather than removing them from the tree.
 
-## Source code and license
+## Source code and licence
 
-The platform code (frontend, backend, build/export tooling) is licensed
-**GNU Affero General Public License v3.0 (AGPL-3.0)**. This project
-builds on and links
-[`stellarium-web-engine`](https://github.com/Stellarium/stellarium-web-engine),
-which is itself AGPL-3.0. The AGPL's network-use clause applies: **you
-are entitled to the complete corresponding source code** for the version
-of this application running here, including any local modifications. A
-link to that source is shown in the app itself; the source also ships
-alongside this Space's own files.
+The platform code is **GNU Affero General Public License v3.0**. It builds
+on [`stellarium-web-engine`](https://github.com/Stellarium/stellarium-web-engine),
+itself AGPL-3.0. The AGPL's network-use clause applies: **you are entitled
+to the complete corresponding source** for the version running here,
+including local modifications. That source is
+<https://github.com/rodelcr/Indigenous_Stellarium>, and the app links to it.
 
-Sky-culture content pulled from `stellarium-skycultures` or contributed
-by community members is licensed **separately from the platform code** —
-see the in-app attribution panel for each culture's specific terms.
-
-## Local development
-
-See the project repository's `README.md` and `docs/DESIGN.md` for the
-full build/run instructions (engine build, frontend dev server, backend
-API, tests) and the project's design spec. This Space's `Dockerfile` and
-assembly script live in that repository's `deploy/` directory.
+Sky-culture content is licensed **separately from the platform code**; see
+the in-app attribution panel for each culture's terms. Cultures authored in
+this project state that licensing is to be determined by the contributing
+community — this project asserts none on anyone's behalf.

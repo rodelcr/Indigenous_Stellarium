@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# publish_pages.sh — push the static bundle built by deploy/pages.sh to the
+# publish_pages.sh — push the static bundle built by deploy/build_static.sh to the
 # gh-pages branch, which GitHub Pages serves.
 #
-# Split from pages.sh on purpose: building is safe and repeatable, while
+# Split from build_static.sh on purpose: building is safe and repeatable, while
 # publishing puts cultural content on the public internet. Those should not
 # share a command, and this one should be easy to read before running.
 #
@@ -15,6 +15,9 @@
 # Refuses to run unless the bundle exists and passes the same exclusion
 # check the build applies — a stale bundle from before an exclusion was
 # added must never be what gets published.
+#
+# The GitHub Pages half of a release; deploy/publish_space.sh is the other
+# half and deploy/release.sh runs both. Keep their checks in step.
 #
 # Usage: deploy/publish_pages.sh [remote] [branch]
 set -euo pipefail
@@ -30,13 +33,14 @@ BRANCH="${2:-gh-pages}"
 WORKTREE="$SCRIPT_DIR/.pages-worktree"
 
 [[ -f "$BUNDLE/index.html" ]] || {
-  echo "publish_pages.sh: ERROR: no bundle at $BUNDLE — run deploy/pages.sh first." >&2
+  echo "publish_pages.sh: ERROR: no bundle at $BUNDLE — run deploy/build_static.sh first." >&2
   exit 1
 }
 
 # Re-verify rather than trust that the bundle on disk came from a build
 # that had the current exclusion list.
 assert_no_excluded_cultures "$BUNDLE/skycultures"
+assert_no_unpublished_authored "$REPO_ROOT/data/skycultures_authored" "$BUNDLE/skycultures"
 
 git -C "$REPO_ROOT" remote get-url "$REMOTE" >/dev/null 2>&1 || {
   echo "publish_pages.sh: ERROR: no git remote named '$REMOTE'." >&2

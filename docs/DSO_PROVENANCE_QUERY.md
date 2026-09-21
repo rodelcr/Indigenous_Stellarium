@@ -63,7 +63,7 @@ Once provenance is established:
 1. Record the acknowledgement in this repository.
 2. Remove `dso`/`dso2` from `unattributed_surveys` in
    `deploy/exclusions.json`, which is the only thing keeping them out.
-3. Rebuild. `pages.sh` asserts on the built bundle that every shipped survey
+3. Rebuild. `build_static.sh` asserts on the built bundle that every shipped survey
    states a copyright, acknowledgement or creator, so it will refuse until
    the `properties` files actually carry one.
 

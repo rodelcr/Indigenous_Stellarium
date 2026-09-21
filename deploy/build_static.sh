@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# pages.sh — build the fully static bundle published to GitHub Pages.
+# build_static.sh — build the fully static bundle that BOTH public deploys
+# serve: GitHub Pages (deploy/publish_pages.sh) and the Hugging Face Static
+# Space (deploy/publish_space.sh). One builder, two publishers, so the two
+# hosts cannot drift on what they ship — they differ only in PAGES_BASE.
 #
 # Static is possible at all because web/src/draftStore.js falls back to
 # the visitor's own browser storage when no backend answers: authored
@@ -17,14 +20,16 @@
 #   4. regenerates attribution.json from the filtered culture set, so the
 #      credits describe exactly what is shipped
 #   5. runs the Vite build against the staged public dir, with `base` set
-#      to the GitHub Pages project subpath
+#      to the host's subpath (/<repo>/ for GitHub Pages, / for the Space)
 #   6. verifies the output, failing the build rather than publishing wrong
 #
-# It never pushes. Publishing is deploy/publish_pages.sh, deliberately a
-# separate step.
+# It never pushes. Publishing is deploy/publish_pages.sh or
+# deploy/publish_space.sh, deliberately separate steps; deploy/release.sh
+# runs build + publish for both hosts from one source commit.
 #
-# Usage: deploy/pages.sh [output_dir]
-#   PAGES_BASE   deployment subpath      (default /Indigenous_Stellarium/)
+# Usage: deploy/build_static.sh [output_dir]
+#   PAGES_BASE   deployment subpath      (default /Indigenous_Stellarium/;
+#                use / for the Hugging Face Static Space)
 #   SOURCE_URL   AGPL-3.0 corresponding-source link shown in the app.
 #                This is a LICENCE OBLIGATION (§13 network use), not a
 #                courtesy link, so the build verifies it made it into the
@@ -38,6 +43,10 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 source "$SCRIPT_DIR/exclusions.sh"
 
 OUT="${1:-$SCRIPT_DIR/.pages}"
+# Absolute, because the Vite build below runs from web/ and would resolve a
+# relative output_dir against THAT directory, writing the bundle to
+# web/deploy/... and then failing on the .nojekyll touch.
+case "$OUT" in /*) ;; *) OUT="$PWD/$OUT" ;; esac
 STAGE_PUBLIC="$SCRIPT_DIR/.pages-public"
 PAGES_BASE="${PAGES_BASE:-/Indigenous_Stellarium/}"
 SOURCE_URL="${SOURCE_URL:-https://github.com/rodelcr/Indigenous_Stellarium}"
@@ -46,21 +55,21 @@ SOURCE_URL="${SOURCE_URL:-https://github.com/rodelcr/Indigenous_Stellarium}"
 # both slashes or Vite emits asset URLs that 404 in production while
 # looking fine in dev.
 [[ "$PAGES_BASE" == /* && "$PAGES_BASE" == */ ]] || {
-  echo "pages.sh: ERROR: PAGES_BASE must start and end with '/' (got '$PAGES_BASE')" >&2
+  echo "build_static.sh: ERROR: PAGES_BASE must start and end with '/' (got '$PAGES_BASE')" >&2
   exit 1
 }
 
 for required in web/public/engine web/public/skydata web/public/skycultures \
                 web/public/cities.json data/taxonomy.json web/node_modules; do
   [[ -e "$REPO_ROOT/$required" ]] || {
-    echo "pages.sh: ERROR: $required not found — run scripts/build_engine.sh," \
+    echo "build_static.sh: ERROR: $required not found — run scripts/build_engine.sh," \
          "scripts/fetch_skycultures.py, scripts/fetch_cities.py, and" \
          "'npm install' in web/ first (see README.md)." >&2
     exit 1
   }
 done
 
-echo "pages.sh: base = $PAGES_BASE"
+echo "build_static.sh: base = $PAGES_BASE"
 
 # --- 2. staged, filtered public dir -----------------------------------
 rm -rf "$STAGE_PUBLIC" "$OUT"
@@ -82,7 +91,7 @@ for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   # Authored drafts are staged into this directory for dev; they ship only
   # via stage_authored_skycultures below, gated by the allowlist.
   if is_authored_culture "$REPO_ROOT/data/skycultures_authored" "$name"; then
-    echo "pages.sh: skipping dev-staged authored culture '$name' (allowlist decides)"
+    echo "build_static.sh: skipping dev-staged authored culture '$name' (allowlist decides)"
     continue
   fi
   skip=false
@@ -90,7 +99,7 @@ for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
     [[ "$name" == "$ex" ]] && skip=true
   done
   if [[ "$skip" == true ]]; then
-    echo "pages.sh: withholding culture '$name' (see deploy/exclusions.json)"
+    echo "build_static.sh: withholding culture '$name' (see deploy/exclusions.json)"
     continue
   fi
   cp -R "$dir" "$STAGE_PUBLIC/skycultures/$name"
@@ -201,10 +210,10 @@ assert attributed == shipped, (
     f"only in attribution: {sorted(attributed - shipped)})"
 )
 
-print(f"pages.sh: verified {len(shipped)} cultures, all attributed, "
+print(f"build_static.sh: verified {len(shipped)} cultures, all attributed, "
       f"no dangling taxonomy references, AGPL source link present")
 PY
 
-echo "pages.sh: bundle at $OUT ($(du -sh "$OUT" | cut -f1))"
-echo "pages.sh: shipped cultures:"
+echo "build_static.sh: bundle at $OUT ($(du -sh "$OUT" | cut -f1))"
+echo "build_static.sh: shipped cultures:"
 ls "$OUT/skycultures"

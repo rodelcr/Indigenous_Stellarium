@@ -3,10 +3,10 @@
 // Two backends, chosen at runtime rather than at build time:
 //
 //   1. The FastAPI backend at /api/drafts, when one is reachable (local dev,
-//      or a Docker deployment).
+//      or a future host that runs the backend).
 //   2. The visitor's own browser (localStorage), when it is not — which is
-//      the case on the free static Hugging Face Space, where there is no
-//      server at all.
+//      the case on both public deploys (GitHub Pages and the Hugging Face
+//      Static Space), where there is no server at all.
 //
 // The static case is not merely a degraded mode. Steward review is Phase 2
 // and does not exist yet, so a public server collecting community knowledge

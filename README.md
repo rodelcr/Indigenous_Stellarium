@@ -103,22 +103,40 @@ above.
 
 ## Deploying
 
+Two public hosts, one build:
+
+- GitHub Pages — <https://rodelcr.github.io/Indigenous_Stellarium/>
+- Hugging Face Static Space — <https://rodelcr-indigenous-stellarium.static.hf.space/>
+
 ```sh
-./deploy/pages.sh          # build the static bundle into deploy/.pages/
-./deploy/publish_pages.sh  # push it to the gh-pages branch
+./deploy/release.sh        # build both bundles, publish both, verify both remotes
 ```
 
-`pages.sh` regenerates attribution from each culture's own `description.md`,
-filters the culture taxonomy so no entry points at data the deploy does not
-ship, applies the per-culture licence exclusions, and verifies the **built
-artifact** rather than the intent — a missing AGPL source link, a dangling
-taxonomy reference, or an excluded culture in the output fails the build.
-Building and publishing are separate commands on purpose: one is repeatable
-and local, the other puts cultural content on the public internet.
+or, piecewise:
 
-`deploy/` also holds a Docker-based deployment for hosts that can run the
-backend. Both deploy paths read the same exclusion manifest
-(`deploy/exclusions.json`) so they cannot drift apart on a licence question.
+```sh
+./deploy/build_static.sh                      # Pages bundle -> deploy/.pages/
+PAGES_BASE=/ ./deploy/build_static.sh deploy/.space   # Space bundle -> deploy/.space/
+./deploy/publish_pages.sh                     # push to the gh-pages branch
+./deploy/publish_space.sh                     # push to the Space (needs `hf auth login`)
+```
+
+`build_static.sh` regenerates attribution from each culture's own
+`description.md`, filters the culture taxonomy so no entry points at data the
+deploy does not ship, applies the per-culture licence exclusions and the
+authored-culture allowlist, and verifies the **built artifact** rather than
+the intent — a missing AGPL source link, a dangling taxonomy reference, an
+excluded culture or an uncleared authored draft in the output fails the
+build. The two hosts differ only in asset base path; `release.sh` refuses to
+publish unless the two bundles ship the same cultures and identical data,
+and refuses to start on a dirty tree or a commit not yet on `origin`, since
+the app's AGPL source link must point at published source. Each publisher
+verifies its own remote after pushing.
+
+There is no server in either deploy; drafts stay in the visitor's browser.
+A container path for hosts that can run the backend existed until
+2026-09-21 and was removed as unused (Docker Spaces are paywalled); it is in
+git history if a backend host appears.
 
 Any deployment must carry: the licence exclusions, the generated attribution
 panel, a visible link to this source (an AGPL obligation, not a courtesy), and

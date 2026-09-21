@@ -12,10 +12,11 @@ dist/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-deploy/.payload/
 web/public/attribution.json
 
 deploy/.pages/
 deploy/.pages-public/
 deploy/.pages-worktree/
+deploy/.space/
+deploy/.space-staging/
 web/public/cities.json

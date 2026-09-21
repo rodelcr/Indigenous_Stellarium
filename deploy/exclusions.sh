@@ -3,8 +3,8 @@
 # source of truth for which sky cultures are kept OUT of every public
 # deployment of this project.
 #
-# Sourced by both shell deploy paths (deploy/assemble.sh for the container
-# build, deploy/pages.sh for the static GitHub Pages build). The list
+# Sourced by the static builder (deploy/build_static.sh) and both publishers
+# (deploy/publish_pages.sh, deploy/publish_space.sh). The list
 # itself lives in JSON rather than here because deploy/filter_taxonomy.py
 # needs the same list and the same per-culture reasons: a licence
 # exclusion that silently applies to one deploy path and not another is

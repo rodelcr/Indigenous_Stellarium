@@ -14,6 +14,9 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+# Every script that assembles a public bundle. Both public hosts (GitHub
+# Pages, Hugging Face Static Space) serve the output of the one builder.
+DEPLOY_BUILDERS = ("build_static.sh",)
 sys.path.insert(0, str(REPO_ROOT / "deploy"))
 
 from filter_taxonomy import (  # noqa: E402
@@ -186,13 +189,16 @@ class TestBundledSkycultureAllowlist:
         data = json.loads((REPO_ROOT / "deploy" / "exclusions.json").read_text())
         assert "belarusian" not in data["bundled_skycultures_allowed"]
 
-    def test_both_deploy_paths_filter_the_taxonomy(self):
+    def test_every_deploy_builder_filters_the_taxonomy(self):
         """Excluding a culture's directory is only half the job: a tree node
         still carrying its skyculture_id renders as a clickable culture that
-        404s and shows nothing. assemble.sh bare-copied the taxonomy while
-        pages.sh filtered it, so the container deploy really did offer
-        kamilaroi and lokono as dead entries."""
-        for script in ("pages.sh", "assemble.sh"):
+        404s and shows nothing. The since-removed container path bare-copied
+        the taxonomy while the static build filtered it, so that deploy
+        really did offer kamilaroi and lokono as dead entries. There is one
+        builder now (both public hosts serve its output); DEPLOY_BUILDERS
+        exists so a second one cannot be added without inheriting these
+        checks."""
+        for script in DEPLOY_BUILDERS:
             text = (REPO_ROOT / "deploy" / script).read_text()
             assert "filter_taxonomy.py" in text, (
                 f"deploy/{script} ships a taxonomy without filtering it"
@@ -202,7 +208,7 @@ class TestBundledSkycultureAllowlist:
         """web/public/taxonomy.json is a generated copy that drifts from the
         hand-authored data/taxonomy.json -- they were out of sync when this
         was found, the copy missing the yana_phuyu node."""
-        for script in ("pages.sh", "assemble.sh"):
+        for script in DEPLOY_BUILDERS:
             text = (REPO_ROOT / "deploy" / script).read_text()
             # Only a READ of the repo copy is a problem. Writing to
             # "$OUT/web/public/taxonomy.json" is fine -- the payload
@@ -212,10 +218,10 @@ class TestBundledSkycultureAllowlist:
                 "drifts from the hand-authored data/taxonomy.json"
             )
 
-    def test_both_deploy_paths_prune_bundled_cultures(self):
-        """A guard applied to one deploy path and not the other would look
-        fine while still publishing the content from the other."""
-        for script in ("pages.sh", "assemble.sh"):
+    def test_every_deploy_builder_prunes_bundled_cultures(self):
+        """A guard applied to one builder and not another would look fine
+        while still publishing the content from the other."""
+        for script in DEPLOY_BUILDERS:
             text = (REPO_ROOT / "deploy" / script).read_text()
             assert "prune_bundled_skycultures" in text, (
                 f"deploy/{script} copies skydata but never prunes it"

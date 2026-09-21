@@ -103,9 +103,11 @@ cd web && npx vitest run
 ./backend/.venv/bin/python scripts/export_skyculture.py \
     --culture rapa_nui --dest web/public/skycultures
 
-# Build the static GitHub Pages bundle, then publish it
-./deploy/pages.sh
-./deploy/publish_pages.sh
+# Build + publish BOTH public deploys (GitHub Pages + HF Static Space) from
+# one clean, pushed commit, verifying both remotes. Piecewise:
+#   ./deploy/build_static.sh            (PAGES_BASE=/ ... deploy/.space for the Space)
+#   ./deploy/publish_pages.sh / ./deploy/publish_space.sh
+./deploy/release.sh
 ```
 
 **Never run an installer (`npm install`, `pip install`) inside a subagent.**
@@ -132,7 +134,7 @@ several agents before it was diagnosed.
 | `data/skycultures_authored/` | Cultures authored **inside** this project (vs. fetched). |
 | `deploy/exclusions.json` | **The** source of truth for withheld cultures. Read by both deploy paths and by `filter_taxonomy.py`. |
 | `scripts/stage_authored_dev.sh` | Dev-only staging of authored cultures + taxonomy + attribution. Deliberately NOT the deploy path: it stages *everything*, the deploy stages only the allowlist. |
-| `deploy/pages.sh` | Static Pages build. Verifies the built artifact, not the intent. `publish_pages.sh` pushes it. |
+| `deploy/build_static.sh` | The one static build, parameterised by `PAGES_BASE`. Verifies the built artifact, not the intent. `publish_pages.sh` / `publish_space.sh` push it; `release.sh` does both from one commit. |
 | `web/src/skyFraming.js` | What field of view shows a figure. Pure. |
 | `web/src/constellationList.js` | A culture's figures as a list, carrying `hasLines` so name-only figures can say so instead of looking broken. Pure. |
 | `web/src/autoFrame.js` | Zooms to a selected constellation **only when it is too small to see**, and never for a star. |
@@ -140,7 +142,7 @@ several agents before it was diagnosed.
 
 Git-ignored and regenerated, never hunted for: `vendor/`,
 `web/public/{engine,skydata,skycultures,taxonomy.json,attribution.json}`,
-`backend/{.venv,drafts.sqlite}`, `deploy/.pages/`.
+`backend/{.venv,drafts.sqlite}`, `deploy/.pages/`, `deploy/.space/`.
 
 ---
 
@@ -197,7 +199,7 @@ exported draft. `web/src/draftAvailability.js` exists to keep that bug from
 coming back — it requires a parsed JSON body with a string `id`.
 
 **Verify the artifact, never the intent.** This bit twice in one session.
-`pages.sh` checks the built bundle; `publish_pages.sh` did not check the
+`build_static.sh` checks the built bundle; `publish_pages.sh` did not check the
 remote, and reported a successful publish while the stale bundle stayed live
 (its `git checkout --orphan gh-pages` failed on every run after the first,
 with stderr swallowed). Both now verify what actually landed.
