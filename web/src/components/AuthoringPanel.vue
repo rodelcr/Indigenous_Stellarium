@@ -11,9 +11,10 @@
 // panel's UI shows a bare "HIP 91262" as a star's primary label. Every
 // star in the live list is displayed name-first (this culture's name if
 // the engine has one, else a proper/Bayer name, else a neutral positional
-// fallback), with the HIP number as small secondary text — the same
-// pattern StarInfo.vue already established. `nameCache` below exists
-// purely to carry that display info; authoring.js's draft never sees it.
+// fallback). The HIP number is not shown at all — it used to appear as
+// small secondary text, which still made a contributor read a catalogue
+// number (hard rule 6). `nameCache` below exists purely to carry the
+// display info; authoring.js's draft never sees it.
 // The name-resolution logic itself lives in starDisplayName.js (review
 // finding #3) — this component only wires engine data into it.
 import { reactive, ref, onMounted, onUnmounted, computed } from 'vue';
@@ -21,8 +22,8 @@ import { onStarSelected } from '../selection.js';
 import { startDraft } from '../authoring.js';
 import { startOverlay } from '../overlay.js';
 import { getStel } from '../engine.js';
-import { resolveStarDisplayName } from '../starDisplayName.js';
-import { saveDraft, listDrafts, draftToJsonBlob, draftFilename } from '../draftStore.js';
+import { resolveStarDisplayName, starInfoFromObject, starInfoForHip } from '../starDisplayName.js';
+import { saveDraft, listDrafts, draftToJsonBlob, draftFilename, saveNotice } from '../draftStore.js';
 import { assetUrl } from '../assetUrl.js';
 
 const props = defineProps({
@@ -97,15 +98,16 @@ const loadedDraftId = ref(null);
 
 // hip -> { designations: string[], culturalNames: Array<object>, radec:
 // [number,number,number]|null }
-// Populated directly in the onStarSelected callback from primitive/plain
-// values only — payload.obj (the raw WASM object) is never stored here or
+// Populated in the onStarSelected callback, and by loadDraft for a reloaded
+// draft, both through starDisplayName.starInfoFromObject() — plain values
+// only — payload.obj (the raw WASM object) is never stored here or
 // anywhere else in this component, per the known Vue-Proxy-wrapping gotcha.
 const nameCache = new Map();
 
 // Display-name priority/denylist logic lives in starDisplayName.js
 // (pure, unit-tested there) — this just looks the cached info up and
-// hands it off, adding the hip number back on for the template's
-// secondary "HIP <n>" text.
+// hands it off. `hip` rides along for internal use only; the template does
+// not render it.
 function displayFor(hip) {
   const info = nameCache.get(hip);
   if (!info) return { primary: 'Selected star', sub: null, hip };
@@ -168,8 +170,9 @@ const canSave = computed(() => drawing.value && requiredFieldsFilled.value && ha
 const drafts = ref([]);
 const draftsError = ref(null);
 // 'server' when a backend answered, 'local' when drafts live only in this
-// browser (the free static deployment has no backend at all). Drives the
-// notice in the template so a contributor knows where their work went.
+// browser (the free static deployment has no backend at all). The save
+// confirmation itself is worded by draftStore.saveNotice(), which also knows
+// whether the draft was transmitted before it landed locally.
 const storageMode = ref('server');
 
 async function loadDrafts() {
@@ -190,18 +193,28 @@ async function loadDrafts() {
 // a contributor's clicks would have produced, one committed polyline at a
 // time, then sets the metadata/provenance fields with setMeta().
 //
-// Stars replayed this way have no nameCache entry (they weren't just
-// clicked in the engine this session), so the star list falls back to
-// displayFor()'s existing "Selected star" wording — the same neutral
-// fallback used for a freshly-clicked star before its info arrives, not a
-// fabricated name. The overlay (overlay.js) resolves each HIP directly
-// against the engine regardless of nameCache, so the lines themselves
-// still reappear on screen.
+// Stars replayed this way were not clicked this session, so their display
+// names are rebuilt by resolving each HIP against the engine
+// (starInfoForHip) and caching the result in the same shape a click does —
+// a reloaded star is named exactly as a clicked one. This used to just
+// clear the cache, so every reloaded star read "Selected star". A HIP the
+// engine cannot resolve still falls back to displayFor()'s "Selected star",
+// the same neutral wording a click shows before its info arrives — never a
+// fabricated name and never the HIP. The overlay (overlay.js) resolves each
+// HIP directly against the engine regardless of nameCache, so the lines
+// themselves reappear on screen either way.
 function loadDraft(saved) {
   draft = startDraft(saved.culture_key);
   nameCache.clear();
+  const stel = getStel();
   for (const line of saved.lines) {
-    for (const hip of line) draft.addStar(hip);
+    for (const hip of line) {
+      draft.addStar(hip);
+      if (!nameCache.has(hip)) {
+        const info = starInfoForHip(stel, hip);
+        if (info) nameCache.set(hip, info);
+      }
+    }
     draft.penUp();
   }
 
@@ -265,6 +278,8 @@ function clearDraft() {
 // 'idle' | 'saving' | 'saved' | 'error'
 const saveStatus = ref('idle');
 const saveError = ref(null);
+// The post-save confirmation, from draftStore.saveNotice().
+const saveMessage = ref('');
 
 // Always POSTs a new draft row, even when the current state was loaded
 // from an existing one (loadedDraftId set) — PUT /api/drafts/{id} exists
@@ -277,8 +292,11 @@ async function handleSave() {
   saveStatus.value = 'saving';
   saveError.value = null;
   try {
-    const { mode } = await saveDraft(draft.getDraft());
-    storageMode.value = mode;
+    const result = await saveDraft(draft.getDraft());
+    storageMode.value = result.mode;
+    // Worded from whether the draft was transmitted, not from the mode: a
+    // local save on a non-static deploy follows a POST that already left.
+    saveMessage.value = saveNotice(result);
     saveStatus.value = 'saved';
     await loadDrafts();
   } catch (err) {
@@ -318,24 +336,15 @@ onMounted(() => {
   unsubscribeStarSelected = onStarSelected((payload) => {
     // Always cache display info for whatever star was just clicked (cheap,
     // keeps the cache honest even across culture switches), but only feed
-    // it into the draft while actively drawing. Store the raw radec
-    // vector, not a pre-formatted label — starDisplayName.js's
-    // formatRaDecLabel() is pure and does its own c2s/anp/anpm math, so no
-    // engine call is needed beyond this one getInfo() to get the vector.
+    // it into the draft while actively drawing. starInfoFromObject() stores
+    // the raw radec vector, not a pre-formatted label — formatRaDecLabel()
+    // is pure and does its own c2s/anp/anpm math. loadDraft goes through
+    // the same function, so clicked and reloaded stars are named alike.
     const stel = getStel();
-    let radec = null;
-    if (stel) {
-      try {
-        radec = payload.obj.getInfo('radec', stel.core.observer);
-      } catch {
-        radec = null;
-      }
-    }
-    nameCache.set(payload.hip, {
-      designations: payload.designations,
-      culturalNames: payload.culturalNames,
-      radec,
-    });
+    nameCache.set(
+      payload.hip,
+      starInfoFromObject(payload.obj, stel ? stel.core.observer : null)
+    );
 
     if (!drawing.value || !draft) return;
     draft.addStar(payload.hip);
@@ -405,7 +414,6 @@ onUnmounted(() => {
           <li v-for="(star, j) in line" :key="j">
             {{ star.primary }}
             <span v-if="star.sub" class="star-sub">({{ star.sub }})</span>
-            <span class="star-hip">HIP {{ star.hip }}</span>
           </li>
         </ol>
       </div>
@@ -518,11 +526,7 @@ onUnmounted(() => {
         Download draft (.json)
       </button>
 
-      <p v-if="saveStatus === 'saved'" class="panel-hint save-hint">
-        {{ storageMode === 'local'
-          ? 'Saved in this browser only. Nothing was sent anywhere — download it to keep it.'
-          : 'Saved.' }}
-      </p>
+      <p v-if="saveStatus === 'saved'" class="panel-hint save-hint">{{ saveMessage }}</p>
       <p v-else-if="saveStatus === 'error'" class="panel-hint save-hint save-error">{{ saveError }}</p>
     </template>
   </div>
@@ -606,15 +610,6 @@ onUnmounted(() => {
 .star-sub {
   color: var(--text-dim);
   margin-left: 0.25rem;
-}
-
-.star-hip {
-  margin-left: 0.4rem;
-  font-size: 11px;
-  color: var(--text-dim);
-  /* Catalogue identifier — monospace so the digits column aligns. */
-  font-family: var(--font-mono);
-  font-size: var(--font-size-mono);
 }
 
 .button-row {

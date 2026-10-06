@@ -80,10 +80,13 @@ export const LAYER_GROUPS = [
     // Azimuthal and meridian first on purpose: horizon and meridian are what
     // most of the astronomies in this app are organised around, far more
     // than the equatorial grid a Western planetarium opens with.
+    // `equator_line` is the CELESTIAL equator (lines.c: FRAME_JNOW), not the
+    // horizon — it was once mislabelled "Horizon line". The horizon itself is
+    // drawn by the ground/landscape, not by a line here.
     layers: [
       { id: 'azimuthal', label: 'Horizon grid', path: 'lines.azimuthal.visible', type: 'bool' },
       { id: 'meridian', label: 'Meridian', path: 'lines.meridian.visible', type: 'bool' },
-      { id: 'equator_line', label: 'Horizon line', path: 'lines.equator_line.visible', type: 'bool' },
+      { id: 'equator_line', label: 'Celestial equator', path: 'lines.equator_line.visible', type: 'bool' },
       { id: 'ecliptic', label: 'Ecliptic', path: 'lines.ecliptic.visible', type: 'bool' },
       { id: 'equatorial', label: 'Equatorial grid (J2000)', path: 'lines.equatorial.visible', type: 'bool' },
       { id: 'equatorial_jnow', label: 'Equatorial grid (of date)', path: 'lines.equatorial_jnow.visible', type: 'bool' },

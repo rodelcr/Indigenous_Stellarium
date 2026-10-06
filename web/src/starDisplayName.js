@@ -44,6 +44,12 @@ const BAYER_PREFIX = /^\*\s+(\S+)\s+(.+)$/;
 const KNOWN_CATALOG_PREFIX_HINTS =
   /^(HIP|GAIA|TYC|2MASS|SAO|WDS|HD|BD|PPM|AC|CSI|NGC|IC|PSR|USNO|UCAC)\b/i;
 
+// The engine's own constellation id, "CON <culture> <id>"
+// (constellations.c constellation_get_designations). Digit-free, so the
+// digit checks never caught it, and it surfaced as a "name" in the object
+// card. Case-sensitive: it is a fixed engine marker, not prose.
+const ENGINE_CONSTELLATION_ID = /^CON\s/;
+
 /**
  * True if `token` looks like a catalog-style designation (and therefore
  * must never be shown as a star's display name), false only if it
@@ -66,6 +72,10 @@ export function looksLikeCatalogDesignation(token) {
   const s = token.trim();
   if (s === '') return true;
   if (KNOWN_CATALOG_PREFIX_HINTS.test(s)) return true;
+  if (ENGINE_CONSTELLATION_ID.test(s)) return true;
+  // An asterisk is a SIMBAD object-type marker ("V* R Leo", "** STF 1"),
+  // never part of a name. Bayer "* alf Boo" is parsed before this is reached.
+  if (s.includes('*')) return true;
   if (/[A-Za-z]\d/.test(s)) return true; // letters directly followed by digits (BD+36, TYC1234, ...)
   if (/\d[A-Za-z]/.test(s)) return true; // digits directly followed by letters (2MASS, 3C, ...)
   if (/\d/.test(s)) return true; // any digit at all — catalog-style by default
@@ -188,4 +198,56 @@ export function resolveStarDisplayName(info) {
   if (properOrBayer) return { primary: properOrBayer, sub: null };
 
   return { primary: formatRaDecLabel(radec), sub: null };
+}
+
+/**
+ * Read the plain-data record resolveStarDisplayName() needs out of an engine
+ * star object. Both the click path and the draft-reload path go through
+ * this, so a reloaded star is named exactly as a clicked one is.
+ *
+ * Takes the object and observer as arguments (duck-typed: designations(),
+ * culturalDesignations(), getInfo()) rather than importing the engine, so
+ * this module keeps no engine dependency and stays testable. Returns plain
+ * arrays/vectors only — the raw WASM object must never be stored in a Vue
+ * ref (see AuthoringPanel.vue's nameCache note).
+ *
+ * @param {object|null} obj
+ * @param {object|null} observer - stel.core.observer; no radec without it.
+ * @returns {{designations: string[], culturalNames: object[], radec: number[]|null}|null}
+ */
+export function starInfoFromObject(obj, observer) {
+  if (!obj) return null;
+  const read = (fn, fallback) => {
+    try {
+      const v = fn();
+      return v == null ? fallback : v;
+    } catch {
+      return fallback;
+    }
+  };
+  return {
+    designations: read(() => obj.designations(), []),
+    culturalNames: read(() => obj.culturalDesignations(), []),
+    radec: observer ? read(() => obj.getInfo('radec', observer), null) : null,
+  };
+}
+
+/**
+ * Resolve a stored HIP number back to its display record, for stars that
+ * were not clicked this session (a reloaded draft). null when the engine is
+ * not up or cannot find the star — the caller then shows the same neutral
+ * "Selected star" fallback a click shows before its info arrives.
+ *
+ * @param {object|null} stel
+ * @param {number} hip
+ */
+export function starInfoForHip(stel, hip) {
+  if (!stel) return null;
+  let obj = null;
+  try {
+    obj = stel.getObj('HIP ' + hip);
+  } catch {
+    obj = null;
+  }
+  return starInfoFromObject(obj, stel.core ? stel.core.observer : null);
 }

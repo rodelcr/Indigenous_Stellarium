@@ -4,6 +4,7 @@ import {
   saveDraft,
   listDrafts,
   draftFilename,
+  saveNotice,
 } from './draftStore.js';
 
 const goodProvenance = {
@@ -98,6 +99,32 @@ describe('saveDraft', () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) });
     const result = await saveDraft(makeDraft(), { fetchImpl });
     expect(result.mode).toBe('local');
+  });
+
+  // The panel used to say "Nothing was sent anywhere" for every local save.
+  // On a non-static deploy a local save only happens AFTER the full draft was
+  // POSTed and answered 404 — so it WAS sent. The result must say so, and
+  // the panel words its message from this, not from `mode`.
+  it('reports a 404 fallback as transmitted', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) });
+    const result = await saveDraft(makeDraft(), { fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({ mode: 'local', transmitted: true });
+  });
+
+  // A network error does not prove the request never left the machine (it
+  // can fail after the body is sent), so the honest answer is "attempted".
+  it('reports a network-error fallback as transmitted (attempted)', async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+    const result = await saveDraft(makeDraft(), { fetchImpl });
+    expect(result).toMatchObject({ mode: 'local', transmitted: true });
+  });
+
+  it('reports a static-deploy save as NOT transmitted', async () => {
+    const fetchImpl = vi.fn();
+    const result = await saveDraft(makeDraft(), { fetchImpl, staticDeploy: true });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ mode: 'local', transmitted: false });
   });
 
   // The important one: a server that is reachable and REFUSES the draft must
@@ -200,3 +227,24 @@ describe('static deploys must not transmit the draft', () => {
     ).rejects.toThrow(/community/i)
   })
 })
+
+describe('saveNotice', () => {
+  it('says nothing was sent only when nothing was', () => {
+    expect(saveNotice({ mode: 'local', transmitted: false })).toMatch(/Nothing was sent anywhere/);
+  });
+
+  it('never claims nothing was sent after a POST was attempted', () => {
+    const msg = saveNotice({ mode: 'local', transmitted: true });
+    expect(msg).not.toMatch(/Nothing was sent/);
+    expect(msg).toMatch(/kept in this browser/);
+    expect(msg).toMatch(/may have reached/);
+  });
+
+  it('a missing transmitted flag is treated as attempted, never as "nothing sent"', () => {
+    expect(saveNotice({ mode: 'local' })).not.toMatch(/Nothing was sent/);
+  });
+
+  it('is a plain confirmation for a server save', () => {
+    expect(saveNotice({ mode: 'server', id: 7 })).toBe('Saved.');
+  });
+});

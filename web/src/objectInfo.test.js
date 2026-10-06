@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   formatMagnitude, formatDistance, formatAngularSize, formatPhase,
   chooseNames, catalogueDesignations, isCatalogueDesignation, formatType,
-  pickOtype, cleanDesignation, AU_PER_LY,
+  pickOtype, cleanDesignation, AU_PER_LY, otherCulturalNames, objectTitle,
 } from './objectInfo.js'
 
 describe('formatMagnitude', () => {
@@ -122,8 +122,28 @@ describe('chooseNames', () => {
     expect(chooseNames(['Arcturus', 'HIP 69673'], []).primary).toBe('Arcturus')
   })
 
-  it('uses a catalogue id only as a last resort', () => {
-    expect(chooseNames(['HIP 69673'], []).primary).toBe('HIP 69673')
+  // Hard rule 6: a catalogue number is storage, never interface. It used to
+  // be the title "as a last resort"; now there is no human name, there is no
+  // name — the card titles itself from the object type instead (objectTitle).
+  it('never makes a catalogue id the title', () => {
+    expect(chooseNames(['HIP 12345'], []).primary).toBeNull()
+    expect(chooseNames(['PPM 1234'], []).primary).toBeNull()
+    expect(chooseNames(['V* R Leo', 'HIP 48036'], []).primary).toBeNull()
+  })
+
+  it('never shows the engine constellation id as a name', () => {
+    const r = chooseNames(['CON navajo Dilyehe'], [{ name_english: 'Seed-like stars' }])
+    expect(r.primary).toBe('Seed-like stars')
+    expect(r.secondary).toBeNull()
+    expect(chooseNames(['CON navajo Dilyehe'], []).primary).toBeNull()
+  })
+
+  it('finds a real name behind a constellation id', () => {
+    expect(chooseNames(['CON western Ori', 'NAME Orion'], []).primary).toBe('Orion')
+  })
+
+  it('uses a Bayer designation, written as one, when there is no proper name', () => {
+    expect(chooseNames(['* alf Boo', 'HIP 69673'], []).primary).toBe('α Boo')
   })
 
   it('never invents a secondary name or pronunciation', () => {
@@ -225,7 +245,49 @@ describe('chooseNames strips markers from what it shows', () => {
       .toBe('Andromeda Nebula')
   })
 
-  it('falls back to a cleaned catalogue id when there is nothing else', () => {
-    expect(chooseNames(['M 31'], []).primary).toBe('M 31')
+  // Formerly "falls back to a cleaned catalogue id". A catalogue id is never
+  // the title (hard rule 6); it stays in the card's quiet catalogue row.
+  it('has no name, rather than a catalogue id, when there is nothing else', () => {
+    expect(chooseNames(['M 31'], []).primary).toBeNull()
+    expect(catalogueDesignations(['M 31'])).toEqual(['M 31'])
+  })
+})
+
+describe('objectTitle', () => {
+  // What the card is called when chooseNames has no human name: the object
+  // type, then a neutral phrase — never a catalogue or constellation id.
+  it('uses the human name when there is one', () => {
+    expect(objectTitle({ primary: 'Arcturus' }, 'Star')).toBe('Arcturus')
+  })
+
+  it('falls back to the object type', () => {
+    expect(objectTitle({ primary: null }, 'Star')).toBe('Star')
+  })
+
+  it('falls back to a neutral phrase when even the type is unknown', () => {
+    expect(objectTitle({ primary: null }, null)).toBe('Selected object')
+    expect(objectTitle(null, null)).toBe('Selected object')
+  })
+})
+
+describe('otherCulturalNames', () => {
+  // The "Also called" line. It used to drop index 0 on the assumption that
+  // the title came from there, but chooseNames takes the first entry that
+  // actually HAS a name — so [{}, A, B] titled the card A and then said
+  // "Also called A, B".
+  it('excludes the entry actually used as the title, not index 0', () => {
+    const cultural = [{}, { name_native: 'A' }, { name_native: 'B' }]
+    expect(chooseNames([], cultural).primary).toBe('A')
+    expect(otherCulturalNames(cultural)).toEqual(['B'])
+  })
+
+  it('lists every other named entry in order', () => {
+    const cultural = [{ name_native: 'A' }, { name_english: 'B' }, null, { name_native: 'C' }]
+    expect(otherCulturalNames(cultural)).toEqual(['B', 'C'])
+  })
+
+  it('is empty for missing input', () => {
+    expect(otherCulturalNames(undefined)).toEqual([])
+    expect(otherCulturalNames([{ name_native: 'Only' }])).toEqual([])
   })
 })

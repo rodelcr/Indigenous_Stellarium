@@ -83,6 +83,21 @@ describe('layer table', () => {
     expect(lines.indexOf('azimuthal')).toBeLessThan(lines.indexOf('equatorial'))
     expect(lines.indexOf('meridian')).toBeLessThan(lines.indexOf('equatorial'))
   })
+
+  // `equator_line` is the celestial equator (lines.c: name "Equator",
+  // FRAME_JNOW), not the horizon. It was once labelled "Horizon line", which
+  // put a false description on a control in exactly the group that argues
+  // for horizon-based astronomy. Pin label to path so they cannot drift.
+  it('labels each reference line for what the engine actually draws', () => {
+    const byPath = Object.fromEntries(
+      LAYER_GROUPS.find((g) => g.id === 'lines').layers.map((l) => [l.path, l.label]),
+    )
+    expect(byPath['lines.equator_line.visible']).toBe('Celestial equator')
+    expect(byPath['lines.azimuthal.visible']).toBe('Horizon grid')
+    expect(byPath['lines.meridian.visible']).toBe('Meridian')
+    expect(byPath['lines.ecliptic.visible']).toBe('Ecliptic')
+    expect(Object.values(byPath)).not.toContain('Horizon line')
+  })
 })
 
 describe('every declared path exists on the real engine', () => {

@@ -100,7 +100,9 @@ function addDataSources(stel) {
   core.satellites.addDataSource({ url: base + 'tle_satellite.jsonl.gz', key: 'jsonl/sat' });
 }
 
-function setInitialVisibility(stel) {
+// Exported only so engine.test.js can pin these defaults against a fake
+// core; nothing outside this module should call it.
+export function setInitialVisibility(stel) {
   const core = stel.core;
 
   // Task 1 found the engine's *default* atmosphere/landscape rendering
@@ -119,6 +121,14 @@ function setInitialVisibility(stel) {
   core.constellations.lines_visible = false;
   core.constellations.labels_visible = false;
   core.constellations.images_visible = false;
+
+  // Star names too. They are drawn from the CURRENT sky culture, which at
+  // boot is `western` (the only one loaded), so the engine default (on)
+  // labelled the sky with Western star names before any culture was chosen
+  // — with every figure correctly hidden. CulturePanel.selectChild turns
+  // this back on when a culture with data is selected, and keeps it off for
+  // a placeholder (whose stale previous culture would otherwise show).
+  core.stars.hints_visible = false;
 
   // Upstream draws ONLY the constellation under the centre of the view and
   // hides every other one, so figures popped in and out as you panned and

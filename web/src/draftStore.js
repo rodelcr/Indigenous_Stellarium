@@ -23,8 +23,8 @@
 // anywhere — not to us, not to anyone."
 //
 // A static build therefore short-circuits to local storage WITHOUT any
-// network call. The deploy kind is known at build time (deploy/pages.sh sets
-// VITE_DEPLOY_KIND=static), so probing for a backend that cannot exist buys
+// network call. The deploy kind is known at build time (deploy/build_static.sh
+// sets VITE_DEPLOY_KIND=static), so probing for a backend that cannot exist buys
 // nothing and costs the exact guarantee the UI is making. Runtime detection
 // stays for every other deploy, where a backend may or may not be mounted.
 //
@@ -40,7 +40,7 @@ import { assetUrl } from './assetUrl.js';
 const STORAGE_KEY = 'indigenous-stellarium.drafts.v1';
 
 /** True when this bundle was built for a deployment with no backend at all.
- *  Set by deploy/pages.sh; see the module header for why this must gate the
+ *  Set by deploy/build_static.sh; see the module header for why this must gate the
  *  network call rather than merely describe it. */
 export const IS_STATIC_DEPLOY = import.meta.env.VITE_DEPLOY_KIND === 'static';
 
@@ -93,8 +93,16 @@ function writeLocal(list) {
  * Persist a draft. Tries the API first; falls back to localStorage only when
  * the API is unreachable.
  *
+ * A local result also says whether the draft was `transmitted` before it
+ * landed in this browser. On a static deploy it never was. Otherwise local
+ * storage is reached only after the POST failed — a 404 means the whole
+ * draft reached the host, and a network error cannot prove it did not — so
+ * both count as transmitted. The UI must not claim "nothing was sent" for
+ * either.
+ *
  * @param {object} draft — the shape returned by authoring.js's getDraft()
- * @returns {Promise<{mode: 'server'|'local', id: number|string}>}
+ * @returns {Promise<{mode: 'server', id: number} |
+ *   {mode: 'local', id: string, transmitted: boolean}>}
  * @throws {Error} if the server rejected the draft, or if local validation
  *   failed — callers should surface the message to the contributor.
  */
@@ -103,7 +111,7 @@ export async function saveDraft(
   { fetchImpl = globalThis.fetch, staticDeploy = IS_STATIC_DEPLOY } = {}
 ) {
   // No backend can exist here, so do not transmit the draft to find that out.
-  if (staticDeploy) return saveLocal(draft);
+  if (staticDeploy) return saveLocal(draft, { transmitted: false });
 
   let res;
   try {
@@ -113,13 +121,14 @@ export async function saveDraft(
       body: JSON.stringify(draft),
     });
   } catch (err) {
-    // Unreachable: no backend deployed. Fall back.
-    return saveLocal(draft);
+    // Unreachable: no backend deployed. Fall back. The request may have left
+    // this machine before failing, so it is reported as attempted.
+    return saveLocal(draft, { transmitted: true });
   }
 
   // A 404 means the path isn't served at all (static host answering with its
   // SPA fallback, or no API mounted) — that is "no backend", not a rejection.
-  if (res.status === 404) return saveLocal(draft);
+  if (res.status === 404) return saveLocal(draft, { transmitted: true });
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -131,7 +140,7 @@ export async function saveDraft(
   return { mode: 'server', id: body.id };
 }
 
-function saveLocal(draft) {
+function saveLocal(draft, { transmitted }) {
   const problems = validateDraft(draft);
   if (problems.length) throw new Error(problems.join(' '));
 
@@ -140,7 +149,27 @@ function saveLocal(draft) {
   const row = { ...draft, id, status: 'draft', kind: 'polyline', stored: 'local' };
   list.unshift(row);
   writeLocal(list);
-  return { mode: 'local', id };
+  return { mode: 'local', id, transmitted };
+}
+
+/**
+ * What to tell the contributor after a save, worded from what actually
+ * happened. "Nothing was sent anywhere" is said ONLY when no request was
+ * made (a static deploy); after an attempted POST it would be false, so an
+ * absent flag is treated as attempted.
+ *
+ * @param {{mode: 'server'|'local', transmitted?: boolean}} result
+ * @returns {string}
+ */
+export function saveNotice(result) {
+  if (!result || result.mode !== 'local') return 'Saved.';
+  if (result.transmitted === false) {
+    return 'Saved in this browser only. Nothing was sent anywhere — download it to keep it.';
+  }
+  return (
+    'No draft server accepted it, so it was kept in this browser only — download it to keep it. ' +
+    'Saving to the server was tried first, so the draft may have reached this site\'s host.'
+  );
 }
 
 /**

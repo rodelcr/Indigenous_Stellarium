@@ -13,7 +13,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { getStel } from '../engine.js';
 import { onObjectSelected } from '../selection.js';
 import {
-  chooseNames, catalogueDesignations, formatMagnitude, formatDistance,
+  chooseNames, objectTitle, otherCulturalNames as otherCulturalNamesOf,
+  catalogueDesignations, formatMagnitude, formatDistance,
   formatAngularSize, formatPhase, formatType,
 } from '../objectInfo.js';
 import {
@@ -102,24 +103,27 @@ const temperatureSource = BV_TEMPERATURE_SOURCE;
 
 // Cultural names beyond the one used as the primary title — a star can carry
 // several in one culture, and dropping them would quietly privilege the first.
-const otherCulturalNames = computed(() => {
-  if (!selection.value) return [];
-  const all = Array.isArray(selection.value.culturalNames) ? selection.value.culturalNames : [];
-  return all
-    .slice(1)
-    .map((c) => c && (c.name_native || c.name_english))
-    .filter(Boolean);
-});
+// objectInfo.js excludes the entry actually used as the title, which is not
+// always index 0 (an empty first record used to repeat the title here).
+const otherCulturalNames = computed(() =>
+  selection.value ? otherCulturalNamesOf(selection.value.culturalNames) : []
+);
 
-const hasAnything = computed(() => !!(selection.value && names.value.primary));
+// No human name means the title is the object type (or a neutral phrase) —
+// never a catalogue id. When the type IS the title, the separate type line
+// would only repeat it.
+const title = computed(() => objectTitle(names.value, typeLabel.value));
+const showTypeLine = computed(() => !!(names.value.primary && typeLabel.value));
+
+const hasAnything = computed(() => !!selection.value);
 </script>
 
 <template>
   <div v-if="hasAnything" class="object-info" role="status" aria-live="polite">
-    <h2 class="name">{{ names.primary }}</h2>
+    <h2 class="name">{{ title }}</h2>
     <p v-if="names.pronounce" class="pronounce">{{ names.pronounce }}</p>
     <p v-if="names.secondary" class="secondary">{{ names.secondary }}</p>
-    <p v-if="typeLabel" class="type">{{ typeLabel }}</p>
+    <p v-if="showTypeLine" class="type">{{ typeLabel }}</p>
 
     <p v-if="colour" class="colour">
       <span class="swatch" :style="{ background: colour.swatch }" aria-hidden="true"></span>

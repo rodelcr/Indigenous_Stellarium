@@ -13,6 +13,8 @@
 //   obj.type                 1-4 char otype code
 //   stel.otypeToStr(code)    human string for that code
 
+import { extractProperOrBayer } from './starDisplayName.js';
+
 /** 1 light-year in astronomical units. */
 export const AU_PER_LY = 63241.077;
 /** 1 parsec in astronomical units. */
@@ -100,32 +102,67 @@ export function cleanDesignation(d) {
 /**
  * Choose what to call the object.
  *
- * Order: a name in the active sky culture, then a proper name, then a
- * catalogue designation as a last resort. A viewer looking at a Māori sky
- * should see the Māori name for the star, not "HIP 17702" and not
- * "Pleiades".
+ * Order: a name in the active sky culture, then a proper name or Bayer
+ * designation. A viewer looking at a Māori sky should see the Māori name
+ * for the star, not "HIP 17702" and not "Pleiades".
  *
- * Returns { primary, secondary, pronounce } with secondary/pronounce null
- * when there is nothing real to put there — never a placeholder.
+ * There is NO catalogue fallback. Hard rule 6: catalogue numbers are
+ * storage, never interface — this used to title a nameless star "HIP 12345"
+ * "as a last resort", and treated the engine's constellation id
+ * ("CON navajo Dilyehe") as a proper name. The proper-name test is
+ * starDisplayName.js's positive-identification one (a designation must
+ * positively look like a name), shared with the authoring panel rather than
+ * a second allowlist of catalogue prefixes here. When nothing qualifies,
+ * primary is null and the card titles itself with objectTitle().
+ *
+ * Returns { primary, secondary, pronounce } with any of them null when
+ * there is nothing real to put there — never a placeholder.
  */
 export function chooseNames(designations, culturalNames) {
   const cultural = Array.isArray(culturalNames) ? culturalNames : [];
-  const first = cultural.find((c) => c && (c.name_native || c.name_english));
+  const first = cultural.find(hasCulturalName);
   const ds = Array.isArray(designations) ? designations.map(String) : [];
-  const properRaw = ds.find((d) => !isCatalogueDesignation(d) && !/^\*/.test(d));
-  const proper = properRaw ? cleanDesignation(properRaw) : null;
+  const proper = extractProperOrBayer(ds);
 
   if (first) {
     const native = first.name_native || null;
     const english = first.name_english || null;
+    const primary = native || english;
+    const secondary = native && english && native !== english ? english : proper || null;
     return {
-      primary: native || english,
-      secondary: native && english && native !== english ? english : proper || null,
+      primary,
+      secondary: secondary === primary ? null : secondary,
       pronounce: first.name_pronounce || null,
     };
   }
-  if (proper) return { primary: proper, secondary: null, pronounce: null };
-  return { primary: ds[0] ? cleanDesignation(ds[0]) || ds[0] : null, secondary: null, pronounce: null };
+  return { primary: proper || null, secondary: null, pronounce: null };
+}
+
+function hasCulturalName(c) {
+  return !!(c && (c.name_native || c.name_english));
+}
+
+/**
+ * What to title the card when chooseNames found no human name: the object
+ * type ("Star", "Galaxy"), else a neutral phrase. Never a catalogue id.
+ */
+export function objectTitle(names, typeLabel) {
+  if (names && names.primary) return names.primary;
+  return typeLabel || 'Selected object';
+}
+
+/**
+ * Cultural names other than the one chooseNames used as the title. A star
+ * can carry several in one culture, and dropping them would quietly
+ * privilege the first. Excludes the entry ACTUALLY used — the first one
+ * with a name — not index 0, which may be an empty record.
+ */
+export function otherCulturalNames(culturalNames) {
+  const cultural = Array.isArray(culturalNames) ? culturalNames : [];
+  const used = cultural.findIndex(hasCulturalName);
+  return cultural
+    .filter((c, i) => i !== used && hasCulturalName(c))
+    .map((c) => c.name_native || c.name_english);
 }
 
 /** Catalogue designations, in the order the engine gave them. */

@@ -4,6 +4,8 @@ import {
   extractProperOrBayer,
   formatRaDecLabel,
   resolveStarDisplayName,
+  starInfoFromObject,
+  starInfoForHip,
 } from './starDisplayName.js';
 
 // A unit vector pointing at RA=0h, Dec=0deg, used as a stand-in "radec"
@@ -27,6 +29,20 @@ describe('looksLikeCatalogDesignation — denylist posture', () => {
 
   it('rejects a digit-then-letters survey-style token', () => {
     expect(looksLikeCatalogDesignation('2MASS J18365633+3854549')).toBe(true);
+  });
+
+  // Two digit-free shapes the engine really emits that are NOT names:
+  // SIMBAD object-type markers ("V*" variable star, "**" double, ...) and the
+  // engine's own constellation id ("CON <culture> <id>", constellations.c
+  // constellation_get_designations). Both used to pass as proper names.
+  it('rejects SIMBAD object-type markers such as "V* R Leo"', () => {
+    expect(looksLikeCatalogDesignation('V* R Leo')).toBe(true);
+    expect(looksLikeCatalogDesignation('** STF 1')).toBe(true);
+  });
+
+  it('rejects the engine constellation id "CON <culture> <id>"', () => {
+    expect(looksLikeCatalogDesignation('CON navajo Dilyehe')).toBe(true);
+    expect(looksLikeCatalogDesignation('CON western Ori')).toBe(true);
   });
 
   it('accepts plain proper names', () => {
@@ -65,6 +81,15 @@ describe('extractProperOrBayer', () => {
     expect(
       extractProperOrBayer(['HIP 12345', 'BD+36 3317', 'GAIA DR3 987654321'])
     ).toBeNull();
+  });
+
+  it('returns null for a variable-star or constellation-id designation', () => {
+    expect(extractProperOrBayer(['V* R Leo', 'HIP 48036'])).toBeNull();
+    expect(extractProperOrBayer(['CON navajo Dilyehe'])).toBeNull();
+  });
+
+  it('skips a constellation id and still finds a NAME record after it', () => {
+    expect(extractProperOrBayer(['CON western Ori', 'NAME Orion'])).toBe('Orion');
   });
 
   it('returns null for an empty designations array', () => {
@@ -137,5 +162,71 @@ describe('resolveStarDisplayName — priority order and end-to-end scenarios', (
       radec: null,
     });
     expect(result).toEqual({ primary: 'Selected star', sub: null });
+  });
+});
+
+// A duck-typed engine star: just the three methods the authoring panel reads.
+function fakeStar({ designations = [], cultural = [], radec = RADEC_ORIGIN, throws = false } = {}) {
+  return {
+    designations: () => designations,
+    culturalDesignations: () => cultural,
+    getInfo: (key, observer) => {
+      if (throws) throw new Error('no info');
+      return key === 'radec' && observer ? radec : undefined;
+    },
+  };
+}
+
+describe('starInfoFromObject — the one engine-object -> nameCache shape', () => {
+  it('reads designations, cultural names and the radec vector', () => {
+    const obj = fakeStar({ designations: ['Arcturus', 'HIP 69673'], cultural: [{ name_native: 'X' }] });
+    expect(starInfoFromObject(obj, {})).toEqual({
+      designations: ['Arcturus', 'HIP 69673'],
+      culturalNames: [{ name_native: 'X' }],
+      radec: RADEC_ORIGIN,
+    });
+  });
+
+  it('degrades a failing getInfo to a null radec rather than throwing', () => {
+    expect(starInfoFromObject(fakeStar({ throws: true }), {}).radec).toBeNull();
+  });
+
+  it('has no radec without an observer', () => {
+    expect(starInfoFromObject(fakeStar(), null).radec).toBeNull();
+  });
+
+  it('returns null for no object', () => {
+    expect(starInfoFromObject(null, {})).toBeNull();
+  });
+});
+
+describe('starInfoForHip — rebuilding names for a reloaded draft', () => {
+  // loadDraft used to clear the name cache, so every star of a reloaded
+  // draft read "Selected star". It now resolves each HIP against the engine
+  // and feeds the result through the same resolveStarDisplayName() a click
+  // uses.
+  it('resolves a HIP through the engine to a display name, never the HIP', () => {
+    const calls = [];
+    const stel = {
+      core: { observer: {} },
+      getObj: (name) => {
+        calls.push(name);
+        return fakeStar({ designations: ['* alf Boo', 'HIP 69673'] });
+      },
+    };
+    const info = starInfoForHip(stel, 69673);
+    expect(calls).toEqual(['HIP 69673']);
+    expect(resolveStarDisplayName(info).primary).toBe('α Boo');
+  });
+
+  it('falls back to the positional label for a nameless star', () => {
+    const stel = { core: { observer: {} }, getObj: () => fakeStar({ designations: ['HIP 12345'] }) };
+    expect(resolveStarDisplayName(starInfoForHip(stel, 12345)).primary).toMatch(/^Star near RA /);
+  });
+
+  it('returns null when the engine cannot resolve the HIP, or is not up', () => {
+    expect(starInfoForHip({ core: {}, getObj: () => null }, 1)).toBeNull();
+    expect(starInfoForHip({ core: {}, getObj: () => { throw new Error('x'); } }, 1)).toBeNull();
+    expect(starInfoForHip(null, 1)).toBeNull();
   });
 });
