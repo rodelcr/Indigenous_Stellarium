@@ -123,15 +123,18 @@ PAGES_BASE=/ ./deploy/build_static.sh deploy/.space   # Space bundle -> deploy/.
 
 `build_static.sh` regenerates attribution from each culture's own
 `description.md`, filters the culture taxonomy so no entry points at data the
-deploy does not ship, applies the per-culture licence exclusions and the
-authored-culture allowlist, and verifies the **built artifact** rather than
-the intent — a missing AGPL source link, a dangling taxonomy reference, an
-excluded culture or an uncleared authored draft in the output fails the
-build. The two hosts differ only in asset base path; `release.sh` refuses to
+deploy does not ship, copies fetched and authored cultures only by the
+allowlists in `deploy/exclusions.json`, and verifies the **built artifact**
+rather than the intent (`deploy/verify_bundle.py`) — a missing AGPL source
+link, a dangling taxonomy reference, any culture not on an allowlist, a
+culture with no licence or authors, an uncredited survey, or anything in
+`skydata/` the manifest does not name fails the build. The bundle carries a
+`build.json` stamp, and each publisher re-runs the verifier and refuses a
+bundle built from another commit or under another exclusion list. The two hosts differ only in asset base path; `release.sh` refuses to
 publish unless the two bundles ship the same cultures and identical data,
 and refuses to start on a dirty tree or a commit not yet on `origin`, since
 the app's AGPL source link must point at published source. Each publisher
-verifies its own remote after pushing.
+verifies its own remote and the live site after pushing.
 
 There is no server in either deploy; drafts stay in the visitor's browser.
 A container path for hosts that can run the backend existed until
@@ -147,6 +150,9 @@ the demo-sandbox notice.
 Constellation and star-name data is pulled verbatim from
 [stellarium-skycultures](https://github.com/Stellarium/stellarium-skycultures).
 This project does not invent, translate, or edit any culture's content.
+Cultures authored inside this project (`data/skycultures_authored/`) are
+compiled from the published sources each one cites, and ship only when named
+in `deploy/exclusions.json`.
 
 **Each culture's own authors and licence are shown in-app**, extracted
 verbatim from that culture's `description.md` by
@@ -165,6 +171,15 @@ deliberately **excluded from every public deployment**. Each licence grants
 redistribution permission to a specifically named party (the Stellarium
 developers; Stellarium Labs), and this project is neither. See
 [`docs/GOVERNANCE.md`](docs/GOVERNANCE.md#licensing-code-and-content-are-separate).
+
+**Withheld from the app is not withheld from this repository.** This source
+repository is public, and `data/skycultures_authored/` carries drafts that no
+public deployment ships — currently Ojibwe and D(L)akota (names from
+open-access Native Skywatchers papers, pending a request for consent) and
+Yana Phuyu (a literature-derived draft not yet cleared). They are kept here
+deliberately, in the open, so the work and its sources can be reviewed. If a
+community asks for its material to be removed, it will be removed from the
+repository and its history, not only from the app.
 
 ## Licence
 

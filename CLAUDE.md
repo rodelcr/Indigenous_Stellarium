@@ -56,11 +56,22 @@ worse outcome than shipping nothing.
    unattributed, and licensed upstream as "Text and data: TODO".
    **There is a THIRD path**: `scripts/stage_authored_dev.sh` (run by
    `predev`) copies *every* authored draft into `web/public/skycultures/`,
-   and the deploy loops copy that directory. `is_authored_culture` skips
-   those in the fetched-set loop and `assert_no_unpublished_authored` checks
-   the artifact; only `authored_skycultures_published` ships an authored
-   culture. `yana_phuyu` — uncleared — reached a built bundle this way on
-   2026-09-21 and was caught before publish.
+   and the deploy loops copy that directory. `yana_phuyu` —
+   uncleared — reached a built bundle this way on 2026-09-21 and was caught
+   before publish.
+   **And a FOURTH**: `export_skyculture.py` defaulted to the same directory,
+   so any export shipped (and exporting under a fetched key like `maori`
+   replaced the upstream data). Since 2026-10-05 the fix is structural:
+   **every content path is an allowlist** — `fetched_skycultures_published`,
+   `authored_skycultures_published`, `bundled_skycultures_allowed`,
+   `bundled_engine_data` — and `deploy/verify_bundle.py` (run by the build
+   AND both publishers) fails on anything in the bundle the manifest does
+   not name. Exports now go to git-ignored `data/skycultures_exported/`,
+   carry a `.exported-from-drafts` sentinel, and refuse to overwrite a
+   directory without one.
+   **Withheld from the app is not withheld from the repo**: the source repo
+   is public and carries the ojibwe/dakota/yana_phuyu drafts, by Rodrigo's
+   decision (2026-10-06), documented in the README and `exclusions.json`.
 6. **Catalogue numbers are storage, never interface.** HIP ids must stay
    internally — Stellarium's constellation `lines` *are* HIP arrays, and
    dropping them forfeits export and upstreaming. But no contributor should
@@ -95,13 +106,13 @@ cd web && npm install && npm run dev
 # `uvicorn backend.app:app` from the repo root fails with ModuleNotFoundError.
 cd backend && .venv/bin/uvicorn app:app --reload --port 8000
 
-# Tests — 235 frontend, 77 backend/scripts
+# Tests — run both; counts change, don't trust a number written here
 cd web && npx vitest run
 ./backend/.venv/bin/python -m pytest tests/ backend/ -q
 
-# Export a draft culture to Stellarium's native format
-./backend/.venv/bin/python scripts/export_skyculture.py \
-    --culture rapa_nui --dest web/public/skycultures
+# Export a draft culture to Stellarium's native format. Lands in git-ignored
+# data/skycultures_exported/ (staged for dev by `predev`; never deployed).
+./backend/.venv/bin/python scripts/export_skyculture.py --culture rapa_nui
 
 # Build + publish BOTH public deploys (GitHub Pages + HF Static Space) from
 # one clean, pushed commit, verifying both remotes. Piecewise:
@@ -129,12 +140,13 @@ several agents before it was diagnosed.
 | `web/src/starDisplayName.js` | Positive-identification display names, so catalogue designations never leak into the UI. |
 | `web/src/styles/tokens.css` | House style. Consolas, `--radius: 0`, no glow/bloom/gradient/blur. |
 | `backend/app.py`, `backend/db.py` | FastAPI + stdlib sqlite3. No ORM. |
-| `scripts/*.patch` | **Five** engine patches, applied idempotently by `build_engine.sh`. Two touch `constellations.c`, so each guards on its OWN marker string — a shared guard would silently skip the second forever. |
+| `scripts/*.patch` | **Five** engine patches, applied idempotently by `build_engine.sh`. Two touch `constellations.c` and should each guard on their OWN marker — a shared guard would silently skip the second forever. (As of 2026-10-05 the dimming guard still uses the generic marker and is safe only because of step order.) |
 | `data/taxonomy.json` | Culture tree. `skyculture_id: null` + `placeholder: true` = a first-class invitation to contribute, not a disabled row. |
 | `data/skycultures_authored/` | Cultures authored **inside** this project (vs. fetched). |
 | `deploy/exclusions.json` | **The** source of truth for withheld cultures. Read by both deploy paths and by `filter_taxonomy.py`. |
 | `scripts/stage_authored_dev.sh` | Dev-only staging of authored cultures + taxonomy + attribution. Deliberately NOT the deploy path: it stages *everything*, the deploy stages only the allowlist. |
-| `deploy/build_static.sh` | The one static build, parameterised by `PAGES_BASE`. Verifies the built artifact, not the intent. `publish_pages.sh` / `publish_space.sh` push it; `release.sh` does both from one commit. |
+| `deploy/build_static.sh` | The one static build, parameterised by `PAGES_BASE`. Writes a `build.json` stamp (source SHA, dirty flag, exclusions.json hash). `publish_pages.sh` / `publish_space.sh` push it; `release.sh` does both from one commit. |
+| `deploy/verify_bundle.py` | **The** artifact check: culture set == allowlists, complete attribution (no null/TODO licence), every `skydata/` path named, credited surveys, AGPL link, base path, build stamp. Build and both publishers run it; publishers also require the stamp to match HEAD and a clean tree. |
 | `web/src/skyFraming.js` | What field of view shows a figure. Pure. |
 | `web/src/constellationList.js` | A culture's figures as a list, carrying `hasLines` so name-only figures can say so instead of looking broken. Pure. |
 | `web/src/autoFrame.js` | Zooms to a selected constellation **only when it is too small to see**, and never for a star. |
@@ -208,7 +220,7 @@ with stderr swallowed). Both now verify what actually landed.
 patches match on context lines, so an unpinned clone is a reproducibility
 hazard. Note the engine *core* is dormant since Dec 2021 but the *repository*
 is not — the pinned SHA is dated 2026-08-11. To move the pin: update the SHA,
-clone fresh, confirm all three patches `git apply --check` clean.
+clone fresh, confirm all five patches `git apply --check` clean.
 
 **A 4xx rejection must not fall back to localStorage.** `draftStore.js` falls
 back on an *unreachable* backend (network error or 404), never on a 422 —

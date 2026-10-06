@@ -25,20 +25,65 @@ community sets. The project asserts none on anyone's behalf.
 
 ## What is currently published as Osage
 
-Six names, with their meanings. Nothing else.
+Everything below is on the public site today. It is listed in full, because a
+request for review should not describe less than is actually there.
+
+**Fourteen names, with their meanings,** from the page's own table:
 
 | Osage | What the name means | Where La Flesche says it is |
 |---|---|---|
-| Wa´-ba-ha | Litter, the stretcher | the Dipper |
+| Wa´-ba-ha | Litter, the stretcher | the Dipper; also given as the Great Bear, and the chart is captioned Ursa Major |
 | Ṭa-p̣a´ | Deer-head | the Pleiades |
 | Ṭa Tha´-bthiⁿ | Three-deer | the three great stars of Orion's Belt |
 | Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ | Stars-strung-together, or Double-star | theta and iota in Orion |
 | Mi-ḳa´-ḳ'e Zhu-dse | Red-star | the Pole star |
-| Shoⁿ´-ge a-ga-ḳ'e e-goⁿ | Dog that lies suspended in the sky | Sirius |
+| Shoⁿ´-ge a-ga-ḳ'e e-goⁿ | Dog that lies suspended in the sky | Sirius, in Canis Major |
+| Mi-ḳa´-ḳ'e Hoⁿ-baⁿ doⁿ | Day-star | the morning star |
+| Mi-ḳa´-ḳ'e Hoⁿ´ doⁿ | Night-star | the evening star |
+| Wa´-ṭse-do-ga | Male Star | the morning star |
+| Wa´-ṭse Mi-ga | Female Star | the evening star |
+| Mi-ḳa´-ḳ'e toⁿ-ga | The great star | the morning star |
+| Mi-ḳa´-ḳ'e moⁿ-thiⁿ a-zhi | "Star-moving-not" | the Pole star |
+| Wa-ḳoⁿ´-da Hoⁿ´-ba doⁿ | God of Day | the Sun |
+| Wa-ḳoⁿ´-da Hoⁿ doⁿ | Goddess of Night | the Moon |
 
-Alongside them, a short page of star vocabulary — the word for a star, for a
-comet, for a meteor, for the path of a star — and the note that the year 1833
-was known as the year of falling stars.
+Six of these are attached to the sky itself. Ṭa-p̣a´ (the Pleiades),
+Mi-ḳa´-ḳ'e Zhu-dse (Polaris) and Shoⁿ´-ge a-ga-ḳ'e e-goⁿ (Sirius) are shown
+when a viewer clicks that star or cluster. Ṭa Tha´-bthiⁿ and
+Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ are drawn as figures. Wa´-ba-ha is listed as a
+figure but not drawn. The other eight appear only on the culture's
+description page. The morning
+and evening stars are named as such in the sources; no planet is identified
+and none is assumed.
+
+**Six further star words,** on the same page:
+
+| Osage | What it means |
+|---|---|
+| Mi-ḳa´-ḳ'e | star |
+| Mi-ḳa´-ḳ'e siⁿ-dse stse-dse | long-tailed star — a comet |
+| Mi-ḳa´-ḳ'e u-xpa-the | falling star — a meteor |
+| Mi-ḳa´-ḳ'e u-zhoⁿ-ge | the path of a star — an orbit |
+| Mi-ḳa´-ḳ'e-wa-gpe | the inactive star |
+| Mi-ḳa´-ḳ'e-zhiⁿ-ga | Little-star (a personal name) |
+
+**Also on the page:**
+
+- the dictionary's note that Wa´-ba-ha "is frequently referred to in
+  ceremonial rituals by the Osage";
+- the subgens name Ṭa-p̣a´ Zho-i-ga-the, "Deer-head or Pleiades People", of
+  the Hoⁿ Zho´-i-ga-the gens;
+- the dictionary's note that "the year 1833 was known as the year of falling
+  stars";
+- the names of the two Osage authorities La Flesche recorded the knowledge
+  from, as he gives them: Shoⁿ´-ge-moⁿ-iⁿ of the Ṭsi´-zhu Wa-shta-ge gens and
+  Xu´-tha-wa-ṭoⁿ-iⁿ of the Ṭsi´-zhu Wa-noⁿ gens.
+
+> **Correction, 2026-10-06.** An earlier version of this document said only
+> six names were published, "nothing else". That understated what was on the
+> site: the eight further names, the star words and the notes above were
+> published too. If an earlier version was sent, this correction should go
+> with it.
 
 When a viewer clicks one of these stars, they see the Osage name first, its
 meaning second, and the catalogue number last.
