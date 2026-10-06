@@ -52,6 +52,10 @@ fi
 # that had the current exclusion list.
 assert_no_excluded_cultures "$BUNDLE/skycultures"
 assert_no_unpublished_authored "$REPO_ROOT/data/skycultures_authored" "$BUNDLE/skycultures"
+# The build's full check plus the build stamp; see publish_pages.sh.
+python3 "$SCRIPT_DIR/verify_bundle.py" "$BUNDLE" --base / \
+  --source-url "${SOURCE_URL:-https://github.com/rodelcr/Indigenous_Stellarium}" \
+  --expect-sha "$(git -C "$REPO_ROOT" rev-parse HEAD)"
 
 "$HF_PYTHON" -c 'import huggingface_hub' 2>/dev/null || {
   echo "publish_space.sh: ERROR: $HF_PYTHON cannot import huggingface_hub." \
@@ -140,7 +144,8 @@ built_js="$(grep -o 'assets/index-[A-Za-z0-9_-]*\.js' "$BUNDLE/index.html" | hea
   exit 1
 }
 for attempt in $(seq 1 12); do
-  if curl -fsSL "$LIVE_URL" 2>/dev/null | grep -q "$built_js"; then
+  live="$(curl -fsSL "$LIVE_URL" 2>/dev/null || true)"
+  if grep -q "$built_js" <<<"$live"; then
     echo "publish_space.sh: live at $LIVE_URL — serving $built_js (verified)"
     exit 0
   fi

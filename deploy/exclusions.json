@@ -32,7 +32,17 @@
     "'authored_skycultures_published' is an ALLOWLIST of cultures authored",
     "inside this project (data/skycultures_authored/) that may ship. Authored",
     "cultures are drafts by default and stay local; one only ships when it is",
-    "named here, so publishing community knowledge is always a deliberate act."
+    "named here, so publishing community knowledge is always a deliberate act.",
+    "",
+    "'fetched_skycultures_published' is an ALLOWLIST of cultures fetched from",
+    "upstream (scripts/fetch_skycultures.py) that may ship. Until 2026-10-05",
+    "the fetched set was copied by DENYLIST from web/public/skycultures/ --",
+    "a folder that dev staging and the exporter also write into -- so a stale",
+    "or exported draft shipped with every guard passing. Adding a fetched",
+    "culture to a public deploy now means writing its name here.",
+    "",
+    "'bundled_engine_data' names every other path inside skydata/ that may",
+    "ship. deploy/verify_bundle.py fails the build on anything unlisted."
   ],
   "cultures": [
     {
@@ -73,11 +83,46 @@
   "authored_skycultures_published": [
     "osage"
   ],
-  "_authored_note": "osage: star names and translations from La Flesche 1928 and 1932. The ceremonial recitations (wi'-gi-e) in the same sources are deliberately NOT included, and La Flesche's charts of Wa'-ba-ha and Ta Tha'-bthin are not reproduced. yana_phuyu is NOT listed: it remains a literature-derived draft with open caveats and has not been cleared for publication. ojibwe and dakota are NOT listed either: their names come from two open-access Native Skywatchers papers (arXiv:2008.13214, arXiv:2008.08224), but the star maps and guidebooks those papers describe are (c) Native Skywatchers and sold, and no licence is stated anywhere for the underlying knowledge. Readable is not licensed. They are staged for local development only until the request in docs/NATIVE_SKYWATCHERS_REQUEST.md is sent and answered.",
+  "_authored_note": "osage: star names and translations from La Flesche 1928 and 1932. The ceremonial recitations (wi'-gi-e) in the same sources are deliberately NOT included, and La Flesche's charts of Wa'-ba-ha and Ta Tha'-bthin are not reproduced. yana_phuyu is NOT listed: it remains a literature-derived draft with open caveats and has not been cleared for publication. ojibwe and dakota are NOT listed either: their names come from two open-access Native Skywatchers papers (arXiv:2008.13214, arXiv:2008.08224), but the star maps and guidebooks those papers describe are (c) Native Skywatchers and sold, and no licence is stated anywhere for the underlying knowledge. Readable is not licensed. The app withholds them until the request in docs/NATIVE_SKYWATCHERS_REQUEST.md is sent and answered.",
   "_gaia_note": "gaia_dr2_v2 is NOT excluded for want of attribution — it carries obs_copyright (Guillaume Chereau) and the full ESA/Gaia/DPAC acknowledgement, and would pass the credit assertion. It is withheld because 64 MB of it does nothing: with the survey mirrored locally and registered as key 'gaia' (which stars.c:905 requires to set is_gaia), the engine fetches its properties file and then never requests a single tile. Tried: fov down to 1 degree, bortle_index 1, exposure_scale 3, star_linear_scale 4 — no tile request in any case. The engine's own reference frontend never wires this survey either; it loads only skydata/stars. See docs/GAIA_DEPTH_FINDING.md. The mirror, the fetch script and the engine wiring are all kept so this can be picked up without redoing the work.",
   "withheld_surveys": [
     "dso",
     "dso2",
     "gaia_dr2_v2"
-  ]
+  ],
+  "fetched_skycultures_published": [
+    "anutan",
+    "aztec",
+    "blackfoot",
+    "boorong",
+    "hawaiian_starlines",
+    "inuit",
+    "maori",
+    "navajo",
+    "northern_andes",
+    "tongan",
+    "tukano",
+    "tupi",
+    "western"
+  ],
+  "bundled_engine_data": {
+    "top_level": [
+      "stars",
+      "dso",
+      "landscapes",
+      "mpcorb.dat",
+      "CometEls.txt",
+      "tle_satellite.jsonl.gz"
+    ],
+    "skycultures_files": [
+      "index.json",
+      "README.md"
+    ],
+    "surveys": [
+      "milkyway",
+      "sso"
+    ],
+    "_note": "The demo data bundled with stellarium-web-engine (AGPL-3.0), copied from its apps/test-skydata. Load-bearing: without the star catalogue there is no sky. Upstream states no per-asset licence or credit for any of it -- the properties files carry no obs_copyright, obs_ack or hips_creator, and there is no licence file beside them -- so the app credits it as the engine's bundled data and says plainly that per-asset terms are not stated. It names no photographer, survey or licence it cannot verify. milkyway and sso are listed here rather than passing the survey credit check, because they state no credit; that is the honest reason they ship."
+  },
+  "_source_repo_note": "Withheld means withheld from the APP, not from the source repository. The source repo (github.com/rodelcr/Indigenous_Stellarium) is public, and data/skycultures_authored/ in it carries the full ojibwe, dakota and yana_phuyu drafts that no public deploy ships. That is a deliberate choice (Rodrigo, 2026-10-06), recorded so nobody reads 'withheld' as 'not public anywhere'. A community asking for removal means removing it from the repo and its history too, not only from this manifest."
 }

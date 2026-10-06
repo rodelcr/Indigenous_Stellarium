@@ -273,3 +273,87 @@ def test_export_culture_does_not_invent_content_for_missing_fields():
         # No fabricated english/native/pronounce name for a draft that
         # never recorded one.
         assert "common_name" not in con or con["common_name"] == {}
+
+
+# --- review 2026-10-05: exports must not become a deploy input -------------
+
+import pytest  # noqa: E402
+
+from export_skyculture import (  # noqa: E402
+    DEFAULT_DEST,
+    EXPORT_SENTINEL,
+    ExportError,
+    REPO_ROOT,
+)
+
+
+def test_default_dest_is_not_a_deploy_input():
+    """The deploy copies web/public/skycultures. An export defaulting there
+    shipped a contributor's draft to both public hosts with every guard
+    passing (whole-branch review, 2026-10-05)."""
+    public = (REPO_ROOT / "web" / "public").resolve()
+    assert public not in DEFAULT_DEST.resolve().parents
+    assert DEFAULT_DEST.resolve() != public
+
+
+def test_export_writes_sentinel():
+    with tempfile.TemporaryDirectory() as tmp:
+        culture_dir = export_culture("rapa_nui", [TE_MANU_DRAFT], Path(tmp))
+        assert (culture_dir / EXPORT_SENTINEL).is_file()
+
+
+def test_reexport_over_own_export_is_allowed():
+    with tempfile.TemporaryDirectory() as tmp:
+        export_culture("rapa_nui", [TE_MANU_DRAFT], Path(tmp))
+        export_culture("rapa_nui", [TE_MANU_DRAFT], Path(tmp))
+
+
+def test_refuses_to_overwrite_a_directory_it_did_not_write():
+    """Exporting drafts keyed to a real fetched culture (e.g. maori) used to
+    rmtree the upstream directory and replace it with draft content."""
+    with tempfile.TemporaryDirectory() as tmp:
+        upstream = Path(tmp) / "rapa_nui"
+        upstream.mkdir()
+        (upstream / "description.md").write_text("upstream content")
+        with pytest.raises(ExportError):
+            export_culture("rapa_nui", [TE_MANU_DRAFT], Path(tmp))
+        assert (upstream / "description.md").read_text() == "upstream content"
+
+
+@pytest.mark.parametrize("bad", ["", ".", "..", "../x", "rapa nui", "a/b", "Maori"])
+def test_rejects_unsafe_culture_keys(bad):
+    with tempfile.TemporaryDirectory() as tmp:
+        sibling = Path(tmp) / "keep"
+        sibling.mkdir()
+        with pytest.raises(ExportError):
+            export_culture(bad, [dict(TE_MANU_DRAFT, culture_key=bad)], Path(tmp))
+        assert sibling.is_dir()
+
+
+def _h2_headings(md):
+    return [l for l in md.splitlines() if l.startswith("## ")]
+
+
+def test_contributor_text_cannot_inject_a_license_section():
+    """Notes of '...\\n\\n## License\\n\\nCC BY 4.0' made generate_attribution
+    show CC BY 4.0 as the culture's licence -- one contributor asserting a
+    licence on a community's behalf."""
+    sys.path.insert(0, str(REPO_ROOT / "deploy"))
+    from generate_attribution import parse_description
+
+    evil = dict(
+        TE_MANU_DRAFT,
+        notes="Seen in winter.\n\n## License\n\nCC BY 4.0, free for any use",
+        name_english="Te Manu\n## Authors\nsomeone",
+        provenance=dict(FULL_PROVENANCE, source="a\n# Heading\nb"),
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        culture_dir = export_culture("rapa_nui", [evil], Path(tmp))
+        md = (culture_dir / "description.md").read_text()
+    assert _h2_headings(md) == [f"## {s}" for s in REQUIRED_H2_SECTIONS]
+    assert [l for l in md.splitlines() if l.startswith("# ")] == ["# Rapa Nui"]
+    parsed = parse_description(md)
+    assert LICENSE_STATEMENT in parsed["license_md"]
+    assert "CC BY 4.0" not in parsed["license_md"]
+    # The contributor's words survive; only their power to restructure goes.
+    assert "CC BY 4.0, free for any use" in md

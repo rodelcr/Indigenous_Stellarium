@@ -20,3 +20,4 @@ deploy/.pages-worktree/
 deploy/.space/
 deploy/.space-staging/
 web/public/cities.json
+data/skycultures_exported/

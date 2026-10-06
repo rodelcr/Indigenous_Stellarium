@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """export_skyculture.py — turn drafts authored in this app into a
 Stellarium-native sky-culture directory (`index.json` + `description.md`)
-under `web/public/skycultures/<culture_key>/`, in the same schema used by
+under `data/skycultures_exported/<culture_key>/`, in the same schema used by
 the real cultures fetched from Stellarium/stellarium-skycultures (see
 scripts/fetch_skycultures.py and docs/DESIGN.md's "Verified technical
 facts"). This is the step that lets contributed knowledge leave this app
@@ -31,12 +31,17 @@ on a contributing community's behalf.
 Usage (importable):
 
     from export_skyculture import export_culture
-    export_culture("rapa_nui", drafts, Path("web/public/skycultures"))
+    export_culture("rapa_nui", drafts, Path("data/skycultures_exported"))
 
 Usage (CLI):
 
-    python scripts/export_skyculture.py --culture rapa_nui \\
-        --dest web/public/skycultures
+    python scripts/export_skyculture.py --culture rapa_nui
+
+Exports land in data/skycultures_exported/ (git-ignored), which is NOT a
+deploy input: scripts/stage_authored_dev.sh serves them in dev, and nothing
+publishes them. This used to default to web/public/skycultures -- the
+directory the static build copies -- so any export shipped to both public
+hosts with every guard passing (whole-branch review, 2026-10-05).
 """
 from __future__ import annotations
 
@@ -49,7 +54,17 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB_PATH = REPO_ROOT / "backend" / "drafts.sqlite"
-DEFAULT_DEST = REPO_ROOT / "web" / "public" / "skycultures"
+DEFAULT_DEST = REPO_ROOT / "data" / "skycultures_exported"
+
+# Written into every export. export_culture refuses to replace a directory
+# without it, so drafts keyed to a fetched culture (e.g. "maori") can never
+# rmtree the upstream data; and deploy/verify_bundle.py refuses any fetched
+# culture carrying it, so an export cannot pass itself off as upstream data.
+EXPORT_SENTINEL = ".exported-from-drafts"
+
+# culture_key becomes a path component and a token in "CON <key> <id>".
+# "", "..", "a/b" or "rapa nui" would escape dest, rmtree it, or split the id.
+CULTURE_KEY_RE = re.compile(r"^[a-z0-9_]+$")
 DEFAULT_TAXONOMY_PATH = REPO_ROOT / "data" / "taxonomy.json"
 
 # Verbatim wording pinned by the task-8 brief. Do not paraphrase — an
@@ -76,6 +91,28 @@ def _slug(name: str) -> str:
     Collapses internal whitespace only — never alters casing or wording,
     since the id is meant to be traceable back to the recorded name."""
     return re.sub(r"\s+", "-", name.strip())
+
+
+def _md_inline(value: Any) -> str:
+    """A single-line field (name, provenance, source) as one markdown line.
+    Newlines are collapsed so contributor text cannot open a new heading or
+    section -- the words are kept, only the structure they could inject is
+    not."""
+    return re.sub(r"\s+", " ", str(value)).strip()
+
+
+_HEADING_LINE_RE = re.compile(r"^(\s*)(#|=+\s*$|-{2,}\s*$)")
+
+
+def _md_block(value: Any) -> str:
+    """Free text (notes) with every line that markdown would read as a
+    heading escaped. A note containing "## License" otherwise became the
+    culture's licence in deploy/generate_attribution.py: one contributor
+    asserting a licence on a community's behalf."""
+    return "\n".join(
+        _HEADING_LINE_RE.sub(lambda m: m.group(1) + "\\" + m.group(2), line)
+        for line in str(value).strip().splitlines()
+    )
 
 
 def _culture_title(culture_key: str) -> str:
@@ -247,8 +284,8 @@ def build_description(culture_key: str, drafts: list[dict[str, Any]]) -> str:
     lines += ["## Description", ""]
     if culture_drafts:
         for draft in culture_drafts:
-            name = draft.get("name_english") or draft.get("name_native") or "(untitled)"
-            notes = (draft.get("notes") or "").strip()
+            name = _md_inline(draft.get("name_english") or draft.get("name_native") or "(untitled)")
+            notes = _md_block(draft.get("notes") or "")
             if notes:
                 lines.append(f"- **{name}** — {notes}")
             else:
@@ -261,14 +298,14 @@ def build_description(culture_key: str, drafts: list[dict[str, Any]]) -> str:
     lines += ["## Constellations", ""]
     if culture_drafts:
         for draft in culture_drafts:
-            name = draft.get("name_english") or draft.get("name_native") or "(untitled)"
+            name = _md_inline(draft.get("name_english") or draft.get("name_native") or "(untitled)")
             lines.append(f"##### {name}")
             lines.append("")
             if draft.get("name_native"):
-                lines.append(f"Native name: {draft['name_native']}")
+                lines.append(f"Native name: {_md_inline(draft['name_native'])}")
             if draft.get("pronounce"):
-                lines.append(f"Pronunciation: {draft['pronounce']}")
-            notes = (draft.get("notes") or "").strip()
+                lines.append(f"Pronunciation: {_md_inline(draft['pronounce'])}")
+            notes = _md_block(draft.get("notes") or "")
             if notes:
                 lines.append("")
                 lines.append(notes)
@@ -286,7 +323,7 @@ def build_description(culture_key: str, drafts: list[dict[str, Any]]) -> str:
     ]
     if sources:
         for source in dict.fromkeys(sources):  # de-dup, keep first-seen order
-            lines.append(f"- {source}")
+            lines.append(f"- {_md_inline(source)}")
     else:
         lines.append("No sources recorded.")
     lines.append("")
@@ -295,8 +332,8 @@ def build_description(culture_key: str, drafts: list[dict[str, Any]]) -> str:
     lines += ["## Authors", ""]
     any_author = False
     for draft in culture_drafts:
-        name = draft.get("name_english") or draft.get("name_native") or "(untitled)"
-        bits = _provenance_bits(draft.get("provenance") or {})
+        name = _md_inline(draft.get("name_english") or draft.get("name_native") or "(untitled)")
+        bits = [_md_inline(b) for b in _provenance_bits(draft.get("provenance") or {})]
         if bits:
             any_author = True
             lines.append(f"- **{name}** — {'; '.join(bits)}")
@@ -332,8 +369,18 @@ def export_culture(
     scripts/fetch_skycultures.py, so a failure partway through never
     leaves a half-written culture directory behind.
     """
+    if not isinstance(culture_key, str) or not CULTURE_KEY_RE.match(culture_key):
+        raise ExportError(
+            f"culture_key {culture_key!r} must match {CULTURE_KEY_RE.pattern}"
+        )
     dest = Path(dest)
     culture_dest = dest / culture_key
+    if culture_dest.exists() and not (culture_dest / EXPORT_SENTINEL).is_file():
+        raise ExportError(
+            f"{culture_dest} exists and was not written by this exporter "
+            f"(no {EXPORT_SENTINEL}). Refusing to replace it -- it may be a "
+            "fetched upstream culture."
+        )
     tmp_dest = dest / f".{culture_key}.exporting"
     if tmp_dest.exists():
         import shutil
@@ -349,6 +396,10 @@ def export_culture(
 
         description = build_description(culture_key, drafts)
         (tmp_dest / "description.md").write_text(description)
+        (tmp_dest / EXPORT_SENTINEL).write_text(
+            "Written by scripts/export_skyculture.py from contributor drafts.\n"
+            "Not upstream data, and not cleared for publication.\n"
+        )
     except Exception:
         import shutil
 

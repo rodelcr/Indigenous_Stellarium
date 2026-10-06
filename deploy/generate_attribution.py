@@ -34,6 +34,14 @@ import sys
 from pathlib import Path
 from typing import Any
 
+# Cultures compiled INSIDE this project, as opposed to fetched from
+# stellarium-skycultures. A shipped culture whose id is a directory here is
+# marked origin "authored", so the attribution panel can stop telling
+# visitors that none of the data was written by us (Osage ships, and was).
+DEFAULT_AUTHORED_DIR = (
+    Path(__file__).resolve().parent.parent / "data" / "skycultures_authored"
+)
+
 H1_RE = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 # Matches an H2 heading line ("## Something") anywhere, used both to find
 # the start of a target section and to find where the NEXT section begins
@@ -75,14 +83,22 @@ def parse_description(text: str) -> dict[str, str | None]:
     }
 
 
-def build_attribution(skycultures_dir: Path) -> list[dict[str, Any]]:
+def build_attribution(
+    skycultures_dir: Path, authored_dir: Path = DEFAULT_AUTHORED_DIR
+) -> list[dict[str, Any]]:
     """Walk every immediate subdirectory of `skycultures_dir` that has a
     description.md and build one attribution record per culture, sorted
-    by directory id for a stable, reviewable diff. Directories without a
+    by directory id for a stable, reviewable diff. Each record's `origin` is
+    "authored" when its id is a directory under `authored_dir`, else
+    "fetched" — a statement of where the files came from, nothing more. Directories without a
     description.md are skipped with a warning to stderr rather than
     silently omitted — a culture with no attribution data is a problem
     worth noticing, not hiding.
     """
+    authored_ids = (
+        {d.name for d in authored_dir.iterdir() if d.is_dir()}
+        if authored_dir.is_dir() else set()
+    )
     records = []
     for entry in sorted(skycultures_dir.iterdir()):
         if not entry.is_dir():
@@ -110,6 +126,12 @@ def build_attribution(skycultures_dir: Path) -> list[dict[str, Any]]:
                 "title": parsed["title"] or entry.name,
                 "authors_md": parsed["authors_md"],
                 "license_md": parsed["license_md"],
+                "origin": (
+                    # Must match scripts/export_skyculture.py's EXPORT_SENTINEL.
+                    "exported" if (entry / ".exported-from-drafts").exists()
+                    else "authored" if entry.name in authored_ids
+                    else "fetched"
+                ),
             }
         )
     return records
@@ -176,6 +198,42 @@ def build_survey_attribution(skydata_dir: Path) -> list[dict[str, Any]]:
     return records
 
 
+# What each path of the engine's bundled demo data IS, in plain words — never
+# who made it. Upstream (stellarium-web-engine's apps/test-skydata) states no
+# per-asset licence or credit, and the properties files carry no
+# obs_copyright, obs_ack or hips_creator, so naming a survey, photographer or
+# licence here would be inventing an attribution. Keys must match
+# deploy/exclusions.json's bundled_engine_data (pinned by a test).
+ENGINE_DATA_LABELS = {
+    "stars": "star catalogue (to magnitude 7)",
+    "dso": "deep-sky objects",
+    "landscapes": "ground panorama",
+    "mpcorb.dat": "minor-planet orbital elements",
+    "CometEls.txt": "comet orbital elements",
+    "tle_satellite.jsonl.gz": "satellite orbital elements",
+    "surveys/milkyway": "Milky Way image",
+    "surveys/sso": "Sun and Moon images",
+}
+
+
+def build_engine_data(skydata_dir: Path) -> dict[str, Any]:
+    """The engine's bundled demo data that is actually in `skydata_dir`.
+    Shipped since the first deploy with no credit shown anywhere; this is
+    the honest version: where it comes from, what it is, and that no
+    per-asset credit is stated."""
+    items = [
+        {"path": path, "label": label}
+        for path, label in sorted(ENGINE_DATA_LABELS.items())
+        if (skydata_dir / path).exists()
+    ]
+    return {
+        "source": "stellarium-web-engine (AGPL-3.0), bundled demo data",
+        "source_url": "https://github.com/Stellarium/stellarium-web-engine",
+        "credit_stated": False,
+        "items": items,
+    }
+
+
 def main(argv: list[str]) -> int:
     if len(argv) not in (3, 4):
         print(f"usage: {argv[0]} <skycultures_dir> <output_json> [skydata_dir]",
@@ -196,6 +254,8 @@ def main(argv: list[str]) -> int:
     # Object rather than the bare list this used to emit, so survey credit has
     # somewhere to live. The frontend accepts both shapes; see InfoPanel.
     payload = {"cultures": cultures, "surveys": surveys}
+    if skydata_dir:
+        payload["engine_data"] = build_engine_data(skydata_dir)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
                            encoding="utf-8")

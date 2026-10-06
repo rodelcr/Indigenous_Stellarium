@@ -13,15 +13,16 @@
 #
 # What this script does, in order:
 #   1. verifies the generated artifacts exist (engine build, fetched cultures)
-#   2. stages a FILTERED copy of web/public, omitting every culture listed
-#      in deploy/exclusions.json
+#   2. stages a FILTERED copy of web/public: fetched cultures by the
+#      manifest's allowlist, authored ones by theirs (deploy/exclusions.json)
 #   3. filters data/taxonomy.json to match, so no tree node points at data
 #      this deployment does not ship (deploy/filter_taxonomy.py)
 #   4. regenerates attribution.json from the filtered culture set, so the
 #      credits describe exactly what is shipped
 #   5. runs the Vite build against the staged public dir, with `base` set
 #      to the host's subpath (/<repo>/ for GitHub Pages, / for the Space)
-#   6. verifies the output, failing the build rather than publishing wrong
+#   6. verifies the output (deploy/verify_bundle.py), failing the build
+#      rather than publishing wrong
 #
 # It never pushes. Publishing is deploy/publish_pages.sh or
 # deploy/publish_space.sh, deliberately separate steps; deploy/release.sh
@@ -86,23 +87,31 @@ cp "$REPO_ROOT/web/public/cities.json" "$STAGE_PUBLIC/cities.json"
 prune_bundled_skycultures "$STAGE_PUBLIC/skydata"
 prune_withheld_surveys "$STAGE_PUBLIC/skydata"
 
+# Fetched cultures by ALLOWLIST: copy the names the manifest publishes, never
+# "whatever is in the folder". web/public/skycultures also holds dev-staged
+# authored drafts and exports, which are never cleaned up; iterating the
+# folder shipped any of them the denylist did not happen to name.
+for name in "${FETCHED_PUBLISHED[@]}"; do
+  src="$REPO_ROOT/web/public/skycultures/$name"
+  if [[ ! -d "$src" ]]; then
+    echo "build_static.sh: ERROR: fetched culture '$name' is allowlisted but not at" \
+         "$src — run scripts/fetch_skycultures.py." >&2
+    exit 1
+  fi
+  if [[ -e "$src/.exported-from-drafts" ]]; then
+    echo "build_static.sh: ERROR: $src was written by export_skyculture.py, not" \
+         "fetched from upstream — refusing to ship it as '$name'." >&2
+    exit 1
+  fi
+  cp -R "$src" "$STAGE_PUBLIC/skycultures/$name"
+done
 for dir in "$REPO_ROOT"/web/public/skycultures/*/; do
   name="$(basename "$dir")"
-  # Authored drafts are staged into this directory for dev; they ship only
-  # via stage_authored_skycultures below, gated by the allowlist.
-  if is_authored_culture "$REPO_ROOT/data/skycultures_authored" "$name"; then
-    echo "build_static.sh: skipping dev-staged authored culture '$name' (allowlist decides)"
-    continue
-  fi
-  skip=false
-  for ex in "${EXCLUDE_CULTURES[@]}"; do
-    [[ "$name" == "$ex" ]] && skip=true
+  in_list=false
+  for a in "${FETCHED_PUBLISHED[@]}" "${AUTHORED_PUBLISHED[@]}"; do
+    [[ "$name" == "$a" ]] && in_list=true
   done
-  if [[ "$skip" == true ]]; then
-    echo "build_static.sh: withholding culture '$name' (see deploy/exclusions.json)"
-    continue
-  fi
-  cp -R "$dir" "$STAGE_PUBLIC/skycultures/$name"
+  [[ "$in_list" == true ]] || echo "build_static.sh: not shipping '$name' (not allowlisted)"
 done
 # Cultures authored inside this project, per the manifest allowlist.
 stage_authored_skycultures "$REPO_ROOT/data/skycultures_authored" "$STAGE_PUBLIC/skycultures"
@@ -117,6 +126,21 @@ python3 "$SCRIPT_DIR/filter_taxonomy.py" \
 # --- 4. attribution regenerated from the filtered culture set ---------
 python3 "$SCRIPT_DIR/generate_attribution.py" \
   "$STAGE_PUBLIC/skycultures" "$STAGE_PUBLIC/attribution.json" "$STAGE_PUBLIC/skydata"
+
+# What built this bundle. The publishers refuse a bundle whose stamp does not
+# match the current manifest and HEAD, so "build, tighten exclusions.json,
+# publish" can no longer ship the old bundle.
+python3 - "$STAGE_PUBLIC/build.json" "$SCRIPT_DIR/exclusions.json" \
+  "$(git -C "$REPO_ROOT" rev-parse HEAD)" \
+  "$([[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]] && echo true || echo false)" <<'STAMP'
+import hashlib, json, sys
+out, manifest, sha, dirty = sys.argv[1:]
+with open(out, "w") as fh:
+    json.dump({"source_sha": sha, "dirty": dirty == "true",
+               "exclusions_sha256": hashlib.sha256(open(manifest, "rb").read()).hexdigest()},
+              fh, indent=2)
+    fh.write("\n")
+STAMP
 
 # --- 5. build ---------------------------------------------------------
 (
@@ -136,83 +160,10 @@ touch "$OUT/.nojekyll"
 assert_no_excluded_cultures "$OUT/skycultures"
 assert_no_unpublished_authored "$REPO_ROOT/data/skycultures_authored" "$OUT/skycultures"
 
-python3 - "$OUT" "$PAGES_BASE" "$SOURCE_URL" <<'PY'
-import json, sys
-from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-out, base, source_url = Path(sys.argv[1]), sys.argv[2], sys.argv[3]
-
-index = (out / "index.html").read_text(encoding="utf-8")
-assert f'src="{base}assets/' in index or f"src='{base}assets/" in index, (
-    f"index.html does not reference the base path {base!r} — the deployed "
-    "page would request its JS from the wrong path and render nothing"
-)
-
-taxonomy = json.loads((out / "taxonomy.json").read_text(encoding="utf-8"))
-shipped = {p.name for p in (out / "skycultures").iterdir() if p.is_dir()}
-missing = [
-    c["id"]
-    for b in taxonomy
-    for c in b.get("children", [])
-    if c.get("skyculture_id") and c["skyculture_id"] not in shipped
-]
-assert not missing, (
-    f"taxonomy offers cultures whose data is not in the bundle: {missing}"
-)
-
-# AGPL-3.0 s13: a network deployment must offer its corresponding source.
-# Check the built bundle, not the config that was meant to produce it.
-bundle = "".join(p.read_text(encoding="utf-8") for p in (out / "assets").glob("*.js"))
-assert source_url in bundle, (
-    f"the AGPL source link {source_url!r} is not present in the built "
-    "bundle — publishing without it would not satisfy AGPL-3.0 section 13"
-)
-
-# Every sky culture reaching the public must be one the attribution panel
-# covers. The panel is generated from skycultures/ only, so a culture riding
-# along inside skydata/ would ship with no author or licence shown.
-bundled_dir = out / "skydata" / "skycultures"
-if bundled_dir.is_dir():
-    bundled = {p.name for p in bundled_dir.iterdir() if p.is_dir()}
-    stray = bundled - shipped
-    assert not stray, (
-        f"skydata ships sky cultures the attribution panel does not cover: "
-        f"{sorted(stray)} — they would be published with no credit shown"
-    )
-
-# Nothing unattributed may reach the public bundle. Checked on the OUTPUT,
-# because the whole point is that skydata/ is copied wholesale and a survey
-# dropped in there for local work would otherwise ship silently.
-import os
-surveys_dir = out / "skydata" / "surveys"
-if surveys_dir.is_dir():
-    shipped_surveys = {p.name for p in surveys_dir.iterdir() if p.is_dir()}
-    for s in shipped_surveys:
-        props = surveys_dir / s / "properties"
-        text = props.read_text(encoding="utf-8", errors="replace") if props.is_file() else ""
-        assert "obs_copyright" in text or "obs_ack" in text or "hips_creator" in text or s in ("milkyway", "sso"), (
-            f"survey {s!r} is in the bundle with no attribution in its "
-            "properties file — see deploy/exclusions.json"
-        )
-
-cities = out / "cities.json"
-assert cities.is_file(), (
-    "cities.json is missing from the bundle — the location picker's place "
-    "search would fail silently on the deployed site"
-)
-
-attribution = json.loads((out / "attribution.json").read_text(encoding="utf-8"))
-cultures_att = attribution["cultures"] if isinstance(attribution, dict) else attribution
-attributed = {r["id"] for r in cultures_att}
-assert attributed == shipped, (
-    f"attribution does not match shipped cultures "
-    f"(only in bundle: {sorted(shipped - attributed)}; "
-    f"only in attribution: {sorted(attributed - shipped)})"
-)
-
-print(f"build_static.sh: verified {len(shipped)} cultures, all attributed, "
-      f"no dangling taxonomy references, AGPL source link present")
-PY
+# Everything else -- allowlisted culture set, taxonomy, complete attribution,
+# skydata accounted for, AGPL link, base path, build stamp -- lives in one
+# verifier, which both publishers run again before pushing.
+python3 "$SCRIPT_DIR/verify_bundle.py" "$OUT" --base "$PAGES_BASE" --source-url "$SOURCE_URL"
 
 echo "build_static.sh: bundle at $OUT ($(du -sh "$OUT" | cut -f1))"
 echo "build_static.sh: shipped cultures:"

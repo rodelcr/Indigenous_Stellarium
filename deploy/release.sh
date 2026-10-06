@@ -39,7 +39,9 @@ if [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]]; then
 fi
 HEAD_SHA="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 git -C "$REPO_ROOT" fetch -q origin
-if ! git -C "$REPO_ROOT" branch -r --contains "$HEAD_SHA" | grep -q '^ *origin/'; then
+# Captured, not piped into grep -q (SIGPIPE under pipefail; see publish_pages.sh).
+containing="$(git -C "$REPO_ROOT" branch -r --contains "$HEAD_SHA")"
+if ! grep -q '^ *origin/' <<<"$containing"; then
   echo "release.sh: ERROR: HEAD ($(git -C "$REPO_ROOT" rev-parse --short HEAD)) is not on" \
        "any origin branch. The AGPL source link must point at published source —" \
        "push first." >&2
@@ -83,7 +85,18 @@ fi
 if [[ "$DO_SPACE" == true ]]; then
   echo
   echo "release.sh: === publish: Hugging Face Space ==="
-  "$SCRIPT_DIR/publish_space.sh"
+  if ! "$SCRIPT_DIR/publish_space.sh"; then
+    if [[ "$DO_PAGES" == true ]]; then
+      # The worst state this project can be in: a culture withdrawn on one
+      # host and still live on the other. Say so, not just "error".
+      echo >&2
+      echo "release.sh: ERROR: THE HOSTS NOW DIFFER. GitHub Pages serves" \
+           "$(git -C "$REPO_ROOT" rev-parse --short HEAD); the Space still serves its" \
+           "previous build. If this release withdraws anything, it is still live" \
+           "on the Space. Fix and rerun: deploy/release.sh --space-only" >&2
+    fi
+    exit 1
+  fi
 fi
 
 echo

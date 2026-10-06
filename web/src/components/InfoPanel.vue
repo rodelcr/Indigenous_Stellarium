@@ -25,7 +25,7 @@
 // AuthoringPanel (bottom-left) leave free — so opening this panel never
 // repositions or covers any of those already-shipped, already-tested
 // components.
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { renderInlineMarkdownLinks } from '../markdownLinks.js';
 import { assetUrl } from '../assetUrl.js';
 
@@ -40,7 +40,7 @@ import { assetUrl } from '../assetUrl.js';
 //     ephemeral hosting. Telling a visitor the wrong one is a consent
 //     problem, not a copy nit.
 //
-// Defaults describe the container deploy; deploy/pages.sh overrides them.
+// Defaults describe the container deploy; deploy/build_static.sh overrides them.
 const SOURCE_URL =
   import.meta.env.VITE_SOURCE_URL ||
   'https://github.com/rodelcr/Indigenous_Stellarium';
@@ -50,7 +50,22 @@ const isStatic = DEPLOY_KIND === 'static';
 const open = ref(false);
 const cultures = ref([]);
 const surveys = ref([]);
+const engineData = ref(null);
 const loadError = ref(null);
+
+// Where each culture's files came from, per generate_attribution.py's
+// `origin`. The note above the list used to say all of it came from
+// stellarium-skycultures and "None of it is written by us" — false once
+// Osage, compiled inside this project, shipped. A record with no origin
+// (an attribution.json older than the field) is treated as fetched, which
+// is what every record was when that file was generated.
+const fetchedCultures = computed(() =>
+  cultures.value.filter((c) => c.origin !== 'authored' && c.origin !== 'exported'),
+);
+const authoredCultures = computed(() => cultures.value.filter((c) => c.origin === 'authored'));
+// Exports of contributor drafts. Only ever present in dev: the public build
+// refuses them (deploy/verify_bundle.py).
+const exportedCultures = computed(() => cultures.value.filter((c) => c.origin === 'exported'));
 
 onMounted(async () => {
   try {
@@ -68,6 +83,7 @@ onMounted(async () => {
       // Only surveys that actually name someone. One that states no credit
       // is withheld from the deploy, so it should not appear here either.
       surveys.value = (data.surveys || []).filter((s) => s.credited);
+      engineData.value = data.engine_data || null;
     }
   } catch (err) {
     // Non-fatal: the always-visible badge and AGPL link below don't
@@ -161,27 +177,77 @@ onMounted(async () => {
         </div>
       </section>
 
+      <!-- The engine's bundled demo data. It shipped with no credit at all
+           until 2026-10; upstream states no per-asset credit, so this says
+           where it comes from and says plainly that nothing more is stated.
+           It must never name a survey, photographer or licence we cannot
+           verify. -->
+      <section v-if="engineData && engineData.items.length" class="info-section">
+        <h2 class="info-heading">Engine and sky data</h2>
+        <p class="info-note">
+          The following ship as the demo data bundled with
+          <a :href="engineData.source_url" target="_blank" rel="noopener noreferrer"
+            >stellarium-web-engine</a
+          >
+          (AGPL-3.0):
+          {{ engineData.items.map((i) => i.label).join(', ') }}.
+          Upstream does not state per-item credit or licence terms for them, so
+          we cannot credit their original sources here.
+        </p>
+      </section>
+
       <section class="info-section">
         <h2 class="info-heading">Sky culture attribution</h2>
-        <p class="info-note">
-          Constellation and star-name data comes from the official
-          <a
-            href="https://github.com/Stellarium/stellarium-skycultures"
-            target="_blank"
-            rel="noopener noreferrer"
-            >stellarium-skycultures</a
-          >
-          repository. Each entry below is taken from that culture's own
-          <code>description.md</code>. None of it is written by us.
-        </p>
         <p v-if="loadError" class="info-error">Failed to load attribution data.</p>
-        <div v-for="c in cultures" :key="c.id" class="culture-attribution">
-          <h3 class="culture-title">{{ c.title }}</h3>
-          <p v-if="c.authors_md" class="culture-authors" v-html="renderInlineMarkdownLinks(c.authors_md)"></p>
-          <p v-else class="info-note">No authors section provided by upstream.</p>
-          <p v-if="c.license_md" class="culture-license" v-html="renderInlineMarkdownLinks(c.license_md)"></p>
-          <p v-else class="info-note">No license section provided by upstream.</p>
-        </div>
+        <template v-if="fetchedCultures.length">
+          <p class="info-note">
+            Constellation and star-name data for the cultures below comes from
+            the official
+            <a
+              href="https://github.com/Stellarium/stellarium-skycultures"
+              target="_blank"
+              rel="noopener noreferrer"
+              >stellarium-skycultures</a
+            >
+            repository. Each entry is taken from that culture's own
+            <code>description.md</code>. None of it is written by us.
+          </p>
+          <div v-for="c in fetchedCultures" :key="c.id" class="culture-attribution">
+            <h3 class="culture-title">{{ c.title }}</h3>
+            <p v-if="c.authors_md" class="culture-authors" v-html="renderInlineMarkdownLinks(c.authors_md)"></p>
+            <p v-else class="info-note">No authors section provided by upstream.</p>
+            <p v-if="c.license_md" class="culture-license" v-html="renderInlineMarkdownLinks(c.license_md)"></p>
+            <p v-else class="info-note">No license section provided by upstream.</p>
+          </div>
+        </template>
+        <!-- Cultures compiled inside this project. Worded from the data only:
+             what they are compiled from is whatever their own description
+             cites, and nothing is said here about any community beyond it. -->
+        <template v-if="authoredCultures.length">
+          <p class="info-note">
+            The cultures below were compiled for this project, from the sources
+            each one's own <code>description.md</code> cites. Each entry is
+            taken from that file.
+          </p>
+          <div v-for="c in authoredCultures" :key="c.id" class="culture-attribution">
+            <h3 class="culture-title">{{ c.title }}</h3>
+            <p v-if="c.authors_md" class="culture-authors" v-html="renderInlineMarkdownLinks(c.authors_md)"></p>
+            <p v-else class="info-note">No authors section in its description.</p>
+            <p v-if="c.license_md" class="culture-license" v-html="renderInlineMarkdownLinks(c.license_md)"></p>
+            <p v-else class="info-note">No license section in its description.</p>
+          </div>
+        </template>
+        <template v-if="exportedCultures.length">
+          <p class="info-note">
+            The cultures below are exports of drafts made in this app. They
+            are not reviewed and are never published.
+          </p>
+          <div v-for="c in exportedCultures" :key="c.id" class="culture-attribution">
+            <h3 class="culture-title">{{ c.title }}</h3>
+            <p v-if="c.authors_md" class="culture-authors" v-html="renderInlineMarkdownLinks(c.authors_md)"></p>
+            <p v-if="c.license_md" class="culture-license" v-html="renderInlineMarkdownLinks(c.license_md)"></p>
+          </div>
+        </template>
       </section>
     </div>
   </div>

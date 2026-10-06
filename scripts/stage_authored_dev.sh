@@ -20,12 +20,17 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SRC="$REPO_ROOT/data/skycultures_authored"
 DEST="$REPO_ROOT/web/public/skycultures"
+# Authored cultures (tracked) and exports of contributor drafts (git-ignored,
+# written by scripts/export_skyculture.py). Both are dev-only here: the
+# deploy copies web/public/skycultures by an ALLOWLIST of fetched cultures
+# (deploy/exclusions.json), so nothing staged by this script can ship.
+SOURCES=("$REPO_ROOT/data/skycultures_authored" "$REPO_ROOT/data/skycultures_exported")
 
-[[ -d "$SRC" ]] || { echo "no authored cultures at $SRC" >&2; exit 0; }
 mkdir -p "$DEST"
 
+for SRC in "${SOURCES[@]}"; do
+[[ -d "$SRC" ]] || continue
 for dir in "$SRC"/*/; do
   [[ -d "$dir" ]] || continue
   name="$(basename "$dir")"
@@ -38,7 +43,8 @@ for dir in "$SRC"/*/; do
     echo "ERROR: nested '$name/$name' after staging" >&2
     exit 1
   fi
-  echo "  staged authored culture '$name' for dev"
+  echo "  staged '$name' from ${SRC#"$REPO_ROOT"/} for dev"
+done
 done
 
 # The culture tree. Served from web/public/, authored in data/ -- nothing

@@ -5,7 +5,9 @@ colorFrom: gray
 colorTo: yellow
 sdk: static
 pinned: false
-license: agpl-3.0
+license: other
+license_name: agpl-3.0-code-only
+license_link: https://github.com/rodelcr/Indigenous_Stellarium#licence
 ---
 
 # Indigenous Stellarium

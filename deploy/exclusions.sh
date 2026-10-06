@@ -13,6 +13,7 @@
 #
 # Exports:
 #   EXCLUDE_CULTURES               array of culture ids to omit
+#   FETCHED_PUBLISHED              array of fetched culture ids that may ship
 #   BUNDLED_SKYCULTURES_ALLOWED    array of ids allowed inside skydata/
 #   assert_no_excluded_cultures <dir>       post-copy verification
 #   is_authored_culture <src> <name>        skip drafts in fetched-set loops
@@ -57,7 +58,27 @@ _read_withheld_surveys() {
 import json, sys
 with open(sys.argv[1]) as fh:
     data = json.load(fh)
-print("\n".join(data.get("withheld_surveys") or []))
+ids = data.get("withheld_surveys")
+if not ids:
+    raise SystemExit("exclusions.json has no withheld_surveys")
+print("\n".join(ids))
+' "$_EXCLUSIONS_JSON"
+}
+
+# The fetched-culture ALLOWLIST. Refuses an id that is also excluded, so the
+# two lists cannot contradict each other silently.
+_read_fetched_published() {
+  python3 -c '
+import json, sys
+with open(sys.argv[1]) as fh:
+    data = json.load(fh)
+ids = data.get("fetched_skycultures_published")
+if not ids:
+    raise SystemExit("exclusions.json has no fetched_skycultures_published")
+clash = set(ids) & {c["id"] for c in data["cultures"]}
+if clash:
+    raise SystemExit(f"exclusions.json lists {sorted(clash)} as both published and excluded")
+print("\n".join(ids))
 ' "$_EXCLUSIONS_JSON"
 }
 
@@ -105,6 +126,19 @@ if [[ "${#BUNDLED_SKYCULTURES_ALLOWED[@]}" -eq 0 ]]; then
   echo "exclusions.sh: ERROR: parsed an empty bundled-culture allowlist from" \
        "$_EXCLUSIONS_JSON — refusing to proceed (this would delete every" \
        "bundled sky culture, including the one the app boots)." >&2
+  exit 1
+fi
+
+FETCHED_PUBLISHED=()
+while IFS= read -r _line; do
+  [[ -n "$_line" ]] && FETCHED_PUBLISHED+=("$_line")
+done < <(_read_fetched_published)
+
+# Same `< <(...)` trap as above: a SystemExit in the reader leaves this empty
+# rather than stopping the script, so check the result, at the cause.
+if [[ "${#FETCHED_PUBLISHED[@]}" -eq 0 ]]; then
+  echo "exclusions.sh: ERROR: parsed an empty fetched-culture allowlist from" \
+       "$_EXCLUSIONS_JSON — refusing to proceed." >&2
   exit 1
 fi
 
@@ -236,6 +270,14 @@ WITHHELD_SURVEYS=()
 while IFS= read -r _line; do
   [[ -n "$_line" ]] && WITHHELD_SURVEYS+=("$_line")
 done < <(_read_withheld_surveys)
+
+# A renamed key would leave this empty and ship every mirrored survey,
+# including 64 MB of gaia_dr2_v2.
+if [[ "${#WITHHELD_SURVEYS[@]}" -eq 0 ]]; then
+  echo "exclusions.sh: ERROR: parsed an empty withheld_surveys list from" \
+       "$_EXCLUSIONS_JSON — refusing to proceed." >&2
+  exit 1
+fi
 
 # prune_withheld_surveys <skydata_dir>
 #

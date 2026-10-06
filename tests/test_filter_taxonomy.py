@@ -200,7 +200,12 @@ class TestBundledSkycultureAllowlist:
         checks."""
         for script in DEPLOY_BUILDERS:
             text = (REPO_ROOT / "deploy" / script).read_text()
-            assert "filter_taxonomy.py" in text, (
+            # Code lines only: the script's header comment names
+            # filter_taxonomy.py too, so a plain substring test stayed green
+            # with the actual call deleted.
+            code = "\n".join(l for l in text.splitlines()
+                             if not l.lstrip().startswith("#"))
+            assert "filter_taxonomy.py" in code, (
                 f"deploy/{script} ships a taxonomy without filtering it"
             )
 
