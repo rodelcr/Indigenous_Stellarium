@@ -1,0 +1,132 @@
+# Osage (Wazhazhe)
+
+## Introduction
+
+Osage names for stars and star groups, with their translations, as recorded
+by Francis La Flesche and published by the Bureau of American Ethnology.
+
+These names come from a body of material that includes ceremonial
+recitations — the wi´-gi-e. **The recitations themselves are not reproduced
+here.** What is published is the names of the sky beings, their translations,
+and which stars they were identified with.
+
+## Description
+
+Osage star knowledge is recorded here from two of La Flesche's volumes: the
+1928 report on the child-naming rite, in which sky beings are named and
+identified, and his 1932 dictionary of the language, which carries the wider
+star vocabulary.
+
+`Mi-ḳa´-ḳ'e` is the Osage word for a star. The names below are built from
+it, or describe a figure seen in the sky.
+
+Where a name and a star are given together in the sources, both are recorded
+below. Where the sources name a figure but do not describe its shape, **no
+outline is drawn** — La Flesche's own charts of two of these figures are not
+reproduced here, and guessing at a shape he had already recorded would be an
+invention on top of a source that did not need one.
+
+A figure's name belongs to the figure, not to each of its stars. Ṭa Tha´-bthiⁿ
+is the name of the three belt stars together, not the name of any one of
+them, so it is recorded once against the group. Only names the sources give
+to a single star or cluster — Red-star, the Dog-star, Deer-head — are
+attached to that object.
+
+## Constellations
+
+Two columns matter here and they are not the same thing. **What the name
+means** is Osage. **Where it is** is La Flesche telling his readers which
+part of the Western sky he is pointing at — a cross-reference for an English
+audience, not part of the Osage name. They are kept apart below, and only the
+meaning is used as the figure's name in the data.
+
+| Osage | What the name means | Where La Flesche says it is |
+|---|---|---|
+| Wa´-ba-ha | Litter, the stretcher | the Dipper; also given as the Great Bear, and the chart is captioned Ursa Major |
+| Ṭa-p̣a´ | Deer-head | the Pleiades |
+| Ṭa Tha´-bthiⁿ | Three-deer | the three great stars of Orion's Belt |
+| Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ | Stars-strung-together, or Double-star | theta and iota in Orion |
+| Mi-ḳa´-ḳ'e Zhu-dse | Red-star | the Pole star |
+| Shoⁿ´-ge a-ga-ḳ'e e-goⁿ | Dog that lies suspended in the sky | Sirius, in Canis Major |
+| Mi-ḳa´-ḳ'e Hoⁿ-baⁿ doⁿ | Day-star | the morning star |
+| Mi-ḳa´-ḳ'e Hoⁿ´ doⁿ | Night-star | the evening star |
+| Wa´-ṭse-do-ga | Male Star | the morning star |
+| Wa´-ṭse Mi-ga | Female Star | the evening star |
+| Mi-ḳa´-ḳ'e toⁿ-ga | The great star | the morning star |
+| Mi-ḳa´-ḳ'e moⁿ-thiⁿ a-zhi | "Star-moving-not" | the Pole star |
+| Wa-ḳoⁿ´-da Hoⁿ´-ba doⁿ | God of Day | the Sun |
+| Wa-ḳoⁿ´-da Hoⁿ doⁿ | Goddess of Night | the Moon |
+
+Wa´-ba-ha is the Litter. That "the Dipper", "the Great Bear" and "Ursa Major"
+all appear against it in the sources is La Flesche naming the same region for
+Western readers in three ways; it is not the Osage figure having three names.
+
+The dictionary notes that Wa´-ba-ha "is frequently referred to in ceremonial
+rituals by the Osage". A subgens of the Hoⁿ Zho´-i-ga-the gens carries the
+name Ṭa-p̣a´ Zho-i-ga-the, "Deer-head or Pleiades People".
+
+The morning and evening stars are named as such in the sources; no planet is
+identified, and none is assumed here. Two different terms are both pointed at
+the Pole star — recorded as found rather than reconciled.
+
+### Other star words
+
+| Osage | What it means |
+|---|---|
+| Mi-ḳa´-ḳ'e | star |
+| Mi-ḳa´-ḳ'e siⁿ-dse stse-dse | long-tailed star — a comet |
+| Mi-ḳa´-ḳ'e u-xpa-the | falling star — a meteor |
+| Mi-ḳa´-ḳ'e u-zhoⁿ-ge | the path of a star — an orbit |
+| Mi-ḳa´-ḳ'e-wa-gpe | the inactive star |
+| Mi-ḳa´-ḳ'e-zhiⁿ-ga | Little-star (a personal name) |
+
+Of the falling star the dictionary notes: "The year 1833 was known as the
+year of falling stars."
+
+### Which figures are drawn
+
+Lines are drawn only where the sources state which stars make up the figure:
+Ṭa Tha´-bthiⁿ (the three belt stars) and Mi-ḳa´-ḳ'e u-ḳi-tha-ç'iⁿ (theta and
+iota, and the name is itself the line). Wa´-ba-ha is not drawn: knowing the
+region is the Dipper does not tell us the shape of a litter, and the one
+source that would — La Flesche's chart — is not reproduced here.
+
+## References
+
+- La Flesche, Francis. *The Osage Tribe: Two Versions of the Child-Naming
+  Rite.* Forty-third Annual Report of the Bureau of American Ethnology to
+  the Secretary of the Smithsonian Institution, 1925–1926. Government
+  Printing Office, Washington, 1928, pp. 23–164. Read from the Project
+  Gutenberg transcription, ebook #49326.
+- La Flesche, Francis. *A Dictionary of the Osage Language.* Bureau of
+  American Ethnology Bulletin 109. Government Printing Office, Washington,
+  1932.
+
+Both are United States government publications and are in the public domain
+in the United States.
+
+Star identifications were checked against SIMBAD: Alnitak (HIP 26727),
+Alnilam (HIP 26311), Mintaka (HIP 25930), ι Orionis (HIP 26241), θ¹ Orionis C
+(HIP 26221), Alcyone (HIP 17702), Polaris (HIP 11767) and Sirius
+(HIP 32349). "Theta Orionis" resolves to the Trapezium rather than to one
+star; θ¹ Ori C is used as its anchor, and that is our choice, not the
+source's.
+
+## Authors
+
+The knowledge is Osage. It was recorded by Francis La Flesche (Omaha,
+1857–1932) from Osage authorities named in the source — Shoⁿ´-ge-moⁿ-iⁿ of
+the Ṭsi´-zhu Wa-shta-ge gens and Xu´-tha-wa-ṭoⁿ-iⁿ of the Ṭsi´-zhu Wa-noⁿ
+gens — and published by the Bureau of American Ethnology. Compiled for this
+project from the two volumes above.
+
+## License
+
+Text and data: to be determined by the Osage Nation. No terms are asserted
+here on their behalf.
+
+The sources are out of copyright, which is a fact about copyright and not a
+grant of permission. Published here are star names and their translations;
+the ceremonial recitations in the same sources are deliberately not
+included, and La Flesche's charts of Wa´-ba-ha and Ṭa Tha´-bthiⁿ are not
+reproduced.
